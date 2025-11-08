@@ -6,6 +6,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabaseClient';
 import { getUser } from '@/lib/getUser';
 import { BorrowRequest, ApiResponse } from '@/lib/types';
+import { addCorsHeaders, handleOptionsRequest } from '@/lib/cors';
+
+/**
+ * Handle OPTIONS request for CORS preflight
+ */
+export async function OPTIONS() {
+  return handleOptionsRequest();
+}
 
 /**
  * GET /api/borrow/mine
@@ -14,7 +22,7 @@ import { BorrowRequest, ApiResponse } from '@/lib/types';
  */
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUser();
+    const user = await getUser(request);
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     
@@ -42,16 +50,28 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    return NextResponse.json<ApiResponse<BorrowRequest[]>>(
+    const response = NextResponse.json<ApiResponse<BorrowRequest[]>>(
       { success: true, data: data as BorrowRequest[] },
       { status: 200 }
     );
+    return addCorsHeaders(response);
   } catch (error: any) {
     console.error('Error in GET /api/borrow/mine:', error);
-    return NextResponse.json<ApiResponse<null>>(
+    
+    // Handle authentication errors
+    if (error.message?.includes('Unauthorized')) {
+      const response = NextResponse.json<ApiResponse<null>>(
+        { success: false, error: error.message },
+        { status: 401 }
+      );
+      return addCorsHeaders(response);
+    }
+    
+    const response = NextResponse.json<ApiResponse<null>>(
       { success: false, error: error.message || 'Failed to fetch borrow requests' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 

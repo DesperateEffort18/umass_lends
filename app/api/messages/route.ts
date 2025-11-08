@@ -23,7 +23,7 @@ export async function OPTIONS() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUser();
+    const user = await getUser(request);
     const body = await request.json();
     
     // Validate request body
@@ -73,6 +73,15 @@ export async function POST(request: NextRequest) {
     return addCorsHeaders(response);
   } catch (error: any) {
     console.error('Error in POST /api/messages:', error);
+    
+    // Handle authentication errors
+    if (error.message?.includes('Unauthorized')) {
+      const response = NextResponse.json<ApiResponse<null>>(
+        { success: false, error: error.message },
+        { status: 401 }
+      );
+      return addCorsHeaders(response);
+    }
     
     // Handle Zod validation errors
     if (error.name === 'ZodError') {

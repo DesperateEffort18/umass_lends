@@ -7,6 +7,14 @@ import { getSupabaseClient } from '@/lib/supabaseClient';
 import { getUser } from '@/lib/getUser';
 import { borrowIdParamSchema } from '@/lib/schemas';
 import { BorrowRequest, ApiResponse } from '@/lib/types';
+import { addCorsHeaders, handleOptionsRequest } from '@/lib/cors';
+
+/**
+ * Handle OPTIONS request for CORS preflight
+ */
+export async function OPTIONS() {
+  return handleOptionsRequest();
+}
 
 /**
  * POST /api/borrow/:id/approve
@@ -17,7 +25,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await getUser();
+    const user = await getUser(request);
     
     // Validate borrow request ID
     const { id: requestId } = borrowIdParamSchema.parse({ id: params.id });
@@ -84,25 +92,37 @@ export async function POST(
       .eq('status', 'pending')
       .neq('id', requestId);
     
-    return NextResponse.json<ApiResponse<BorrowRequest>>(
+    const response = NextResponse.json<ApiResponse<BorrowRequest>>(
       { success: true, data: updatedRequest as BorrowRequest },
       { status: 200 }
     );
+    return addCorsHeaders(response);
   } catch (error: any) {
     console.error('Error in POST /api/borrow/:id/approve:', error);
     
+    // Handle authentication errors
+    if (error.message?.includes('Unauthorized')) {
+      const response = NextResponse.json<ApiResponse<null>>(
+        { success: false, error: error.message },
+        { status: 401 }
+      );
+      return addCorsHeaders(response);
+    }
+    
     // Handle Zod validation errors
     if (error.name === 'ZodError') {
-      return NextResponse.json<ApiResponse<null>>(
+      const response = NextResponse.json<ApiResponse<null>>(
         { success: false, error: error.errors[0].message },
         { status: 400 }
       );
+      return addCorsHeaders(response);
     }
     
-    return NextResponse.json<ApiResponse<null>>(
+    const response = NextResponse.json<ApiResponse<null>>(
       { success: false, error: error.message || 'Failed to approve borrow request' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 

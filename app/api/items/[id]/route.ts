@@ -6,6 +6,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabaseClient';
 import { itemIdParamSchema } from '@/lib/schemas';
 import { Item, ApiResponse } from '@/lib/types';
+import { addCorsHeaders, handleOptionsRequest } from '@/lib/cors';
+
+/**
+ * Handle OPTIONS request for CORS preflight
+ */
+export async function OPTIONS() {
+  return handleOptionsRequest();
+}
 
 /**
  * GET /api/items/:id
@@ -44,25 +52,28 @@ export async function GET(
       );
     }
     
-    return NextResponse.json<ApiResponse<Item>>(
+    const response = NextResponse.json<ApiResponse<Item>>(
       { success: true, data: data as Item },
       { status: 200 }
     );
+    return addCorsHeaders(response);
   } catch (error: any) {
     console.error('Error in GET /api/items/:id:', error);
     
     // Handle Zod validation errors
     if (error.name === 'ZodError') {
-      return NextResponse.json<ApiResponse<null>>(
+      const response = NextResponse.json<ApiResponse<null>>(
         { success: false, error: error.errors[0].message },
         { status: 400 }
       );
+      return addCorsHeaders(response);
     }
     
-    return NextResponse.json<ApiResponse<null>>(
+    const response = NextResponse.json<ApiResponse<null>>(
       { success: false, error: error.message || 'Failed to fetch item' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 

@@ -8,6 +8,14 @@ import { getSupabaseClient } from '@/lib/supabaseClient';
 import { getUser } from '@/lib/getUser';
 import { createItemSchema } from '@/lib/schemas';
 import { Item, ApiResponse } from '@/lib/types';
+import { addCorsHeaders, handleOptionsRequest } from '@/lib/cors';
+
+/**
+ * Handle OPTIONS request for CORS preflight
+ */
+export async function OPTIONS() {
+  return handleOptionsRequest();
+}
 
 /**
  * POST /api/items
@@ -15,7 +23,7 @@ import { Item, ApiResponse } from '@/lib/types';
  */
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUser();
+    const user = await getUser(request);
     const body = await request.json();
     
     // Validate request body
@@ -35,31 +43,44 @@ export async function POST(request: NextRequest) {
     
     if (error) {
       console.error('Error creating item:', error);
-      return NextResponse.json<ApiResponse<null>>(
+      const response = NextResponse.json<ApiResponse<null>>(
         { success: false, error: error.message },
         { status: 500 }
       );
+      return addCorsHeaders(response);
     }
     
-    return NextResponse.json<ApiResponse<Item>>(
+    const response = NextResponse.json<ApiResponse<Item>>(
       { success: true, data: data as Item },
       { status: 201 }
     );
+    return addCorsHeaders(response);
   } catch (error: any) {
     console.error('Error in POST /api/items:', error);
     
+    // Handle authentication errors
+    if (error.message?.includes('Unauthorized')) {
+      const response = NextResponse.json<ApiResponse<null>>(
+        { success: false, error: error.message },
+        { status: 401 }
+      );
+      return addCorsHeaders(response);
+    }
+    
     // Handle Zod validation errors
     if (error.name === 'ZodError') {
-      return NextResponse.json<ApiResponse<null>>(
+      const response = NextResponse.json<ApiResponse<null>>(
         { success: false, error: error.errors[0].message },
         { status: 400 }
       );
+      return addCorsHeaders(response);
     }
     
-    return NextResponse.json<ApiResponse<null>>(
+    const response = NextResponse.json<ApiResponse<null>>(
       { success: false, error: error.message || 'Failed to create item' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -94,16 +115,18 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    return NextResponse.json<ApiResponse<Item[]>>(
+    const response = NextResponse.json<ApiResponse<Item[]>>(
       { success: true, data: data as Item[] },
       { status: 200 }
     );
+    return addCorsHeaders(response);
   } catch (error: any) {
     console.error('Error in GET /api/items:', error);
-    return NextResponse.json<ApiResponse<null>>(
+    const response = NextResponse.json<ApiResponse<null>>(
       { success: false, error: error.message || 'Failed to fetch items' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
