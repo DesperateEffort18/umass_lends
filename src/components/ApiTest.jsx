@@ -151,7 +151,7 @@ const ApiTest = () => {
         <button
           onClick={testCreateItem}
           disabled={loading}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+          className="px-4 py-2 bg-umass-maroon text-white rounded hover:bg-umass-maroonDark disabled:opacity-50 font-semibold transition-colors"
         >
           Test: Create Item
         </button>
@@ -208,7 +208,7 @@ const ApiTest = () => {
         </div>
       </div>
 
-      <div className="mt-6 p-4 bg-blue-50 rounded">
+      <div className="mt-6 p-4 bg-umass-lightGray rounded border border-umass-maroon">
         <h3 className="font-bold mb-2">Your Access Token:</h3>
         <p className="text-xs break-all bg-white p-2 rounded">
           {session.access_token}
@@ -218,7 +218,7 @@ const ApiTest = () => {
             navigator.clipboard.writeText(session.access_token);
             alert('Token copied to clipboard!');
           }}
-          className="mt-2 px-3 py-1 bg-blue-500 text-white rounded text-sm"
+          className="mt-2 px-3 py-1 bg-umass-maroon text-white rounded text-sm hover:bg-umass-maroonDark transition-colors"
         >
           Copy Token
         </button>

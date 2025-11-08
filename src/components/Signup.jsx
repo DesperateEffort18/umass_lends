@@ -32,31 +32,37 @@ const handleSignUp = async (e) =>{
 };
 
     return (
-        <div>
-            <form onSubmit={handleSignUp} className="max-w-md mx-auto pt-24">
-                <h2 className="font-bold pb-2">Sign up today!</h2>
-                <p>
-                    Already have an account? <Link to="/signin">Sign in!</Link>
-                </p>
-                <div className="flex flex-col py-4">
-                    <input 
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email" 
-                    className="p-3 mt-6" 
-                    type="email" 
-                    />
-                    <input 
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password" 
-                    className="p-3 mt-6" 
-                    type="password" 
-                    />
-                    <button type="submit" disabled={loading} className="mt-6 w-full">Sign Up</button>
-                    {error && <p className="text-red-600 text-center pt-4">{error}</p>}
-                   
-                </div>
-            
-            </ form>
+        <div className="min-h-screen bg-umass-lightGray flex items-center justify-center">
+            <div className="max-w-md w-full mx-auto px-4">
+                <form onSubmit={handleSignUp} className="bg-white p-8 rounded-lg shadow-lg">
+                    <h2 className="text-3xl font-bold text-umass-maroon pb-2 mb-4">Sign Up Today!</h2>
+                    <p className="text-umass-gray mb-6">
+                        Already have an account? <Link to="/signin" className="text-umass-maroon hover:text-umass-maroonDark font-semibold">Sign in!</Link>
+                    </p>
+                    <div className="flex flex-col py-4">
+                        <input 
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="Email" 
+                            className="p-3 mt-4 border-2 border-gray-300 rounded-lg focus:border-umass-maroon focus:outline-none" 
+                            type="email" 
+                        />
+                        <input 
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Password" 
+                            className="p-3 mt-4 border-2 border-gray-300 rounded-lg focus:border-umass-maroon focus:outline-none" 
+                            type="password" 
+                        />
+                        <button 
+                            type="submit" 
+                            disabled={loading} 
+                            className="mt-6 w-full bg-umass-maroon text-white py-3 rounded-lg hover:bg-umass-maroonDark font-semibold transition-colors disabled:opacity-50"
+                        >
+                            {loading ? 'Signing up...' : 'Sign Up'}
+                        </button>
+                        {error && <p className="text-red-600 text-center pt-4">{error}</p>}
+                    </div>
+                </form>
+            </div>
         </div>
     )
 };
