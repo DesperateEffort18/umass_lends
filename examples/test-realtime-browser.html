@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realtime Messaging Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .config {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #0070f3;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #0051cc;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .messages {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            background: #fafafa;
+        }
+        .message {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 4px;
+            border-left: 3px solid #0070f3;
+        }
+        .message.new {
+            border-left-color: #00cc00;
+            animation: slideIn 0.3s;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .log {
+            font-family: monospace;
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💬 Realtime Messaging Test</h1>
+        
+        <div class="config">
+            <h3>Configuration</h3>
+            <label>Supabase URL:</label>
+            <input type="text" id="supabaseUrl" placeholder="https://your-project.supabase.co" value="">
+            
+            <label>Supabase Anon Key:</label>
+            <input type="text" id="supabaseKey" placeholder="your-anon-key" value="">
+            
+            <label>Item ID:</label>
+            <input type="text" id="itemId" placeholder="item-uuid-here" value="">
+            
+            <label>API Base URL:</label>
+            <input type="text" id="apiUrl" placeholder="http://localhost:3000" value="http://localhost:3000">
+            
+            <button onclick="connect()">Connect to Realtime</button>
+            <button onclick="disconnect()">Disconnect</button>
+        </div>
+
+        <div id="status" class="status disconnected">Not connected</div>
+
+        <div>
+            <h3>Send Message</h3>
+            <textarea id="messageText" rows="3" placeholder="Type your message here..."></textarea>
+            <button onclick="sendMessage()">Send Message</button>
+        </div>
+
+        <div>
+            <h3>Messages (Realtime)</h3>
+            <div id="messages" class="messages">
+                <p style="color: #999; text-align: center;">No messages yet. Connect to start receiving realtime updates.</p>
+            </div>
+            <button onclick="loadMessages()">Load All Messages</button>
+        </div>
+
+        <div id="log" class="log"></div>
+    </div>
+
+    <script type="module">
+        // Import Supabase client (you'll need to use a CDN or bundle this)
+        // For this example, we'll use the Supabase JS library from CDN
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+        document.head.appendChild(script);
+
+        let supabaseClient = null;
+        let channel = null;
+
+        window.connect = async function() {
+            const url = document.getElementById('supabaseUrl').value;
+            const key = document.getElementById('supabaseKey').value;
+            const itemId = document.getElementById('itemId').value;
+
+            if (!url || !key || !itemId) {
+                alert('Please fill in all configuration fields');
+                return;
+            }
+
+            try {
+                supabaseClient = window.supabase.createClient(url, key);
+                
+                // Subscribe to realtime messages
+                channel = supabaseClient
+                    .channel(`messages:${itemId}`)
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: 'INSERT',
+                            schema: 'public',
+                            table: 'messages',
+                            filter: `item_id=eq.${itemId}`,
+                        },
+                        (payload) => {
+                            log('🔔 New message received in real-time!');
+                            addMessage(payload.new, true);
+                        }
+                    )
+                    .subscribe((status) => {
+                        if (status === 'SUBSCRIBED') {
+                            document.getElementById('status').textContent = '✅ Connected to realtime';
+                            document.getElementById('status').className = 'status connected';
+                            log('✅ Successfully subscribed to realtime channel');
+                        } else if (status === 'CHANNEL_ERROR') {
+                            document.getElementById('status').textContent = '❌ Connection error';
+                            document.getElementById('status').className = 'status disconnected';
+                            log('❌ Error subscribing to channel');
+                        }
+                    });
+
+                log('Connecting to realtime...');
+            } catch (error) {
+                log('Error: ' + error.message);
+                alert('Connection failed: ' + error.message);
+            }
+        };
+
+        window.disconnect = function() {
+            if (channel) {
+                supabaseClient.removeChannel(channel);
+                channel = null;
+                document.getElementById('status').textContent = 'Disconnected';
+                document.getElementById('status').className = 'status disconnected';
+                log('Disconnected from realtime');
+            }
+        };
+
+        window.sendMessage = async function() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const itemId = document.getElementById('itemId').value;
+            const text = document.getElementById('messageText').value;
+
+            if (!text.trim()) {
+                alert('Please enter a message');
+                return;
+            }
+
+            try {
+                log('Sending message...');
+                const response = await fetch(`${apiUrl}/api/messages`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        item_id: itemId,
+                        text: text,
+                    }),
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('✅ Message sent: ' + data.data.id);
+                    document.getElementById('messageText').value = '';
+                    // Message will appear via realtime subscription
+                } else {
+                    log('❌ Failed to send: ' + data.error);
+                    alert('Failed to send message: ' + data.error);
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+                alert('Error: ' + error.message);
+            }
+        };
+
+        window.loadMessages = async function() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const itemId = document.getElementById('itemId').value;
+
+            try {
+                log('Loading all messages...');
+                const response = await fetch(`${apiUrl}/api/messages?itemId=${itemId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const messagesDiv = document.getElementById('messages');
+                    messagesDiv.innerHTML = '';
+                    
+                    if (data.data.length === 0) {
+                        messagesDiv.innerHTML = '<p style="color: #999; text-align: center;">No messages yet.</p>';
+                    } else {
+                        data.data.forEach(msg => addMessage(msg, false));
+                    }
+                    log(`✅ Loaded ${data.data.length} messages`);
+                }
+            } catch (error) {
+                log('❌ Error loading messages: ' + error.message);
+            }
+        };
+
+        function addMessage(msg, isNew) {
+            const messagesDiv = document.getElementById('messages');
+            if (messagesDiv.querySelector('p[style*="color: #999"]')) {
+                messagesDiv.innerHTML = '';
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message' + (isNew ? ' new' : '');
+            messageDiv.innerHTML = `
+                <strong>${msg.text}</strong><br>
+                <small>Sent at: ${new Date(msg.created_at).toLocaleString()}</small>
+            `;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>
+
