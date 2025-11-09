@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserAuth } from '../context/AuthContext';
 import { profileAPI } from '../utils/api';
 import { uploadProfilePicture } from '../utils/imageUpload';
+import { supabase } from '../supabaseClient';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -61,9 +62,26 @@ const Profile = () => {
         if (response.data.profile_picture_url) {
           setImagePreview(response.data.profile_picture_url);
         }
+      } else if (response.error && (response.error.includes('Unauthorized') || response.error.includes('Invalid or expired token'))) {
+        // Token expired - clear session and redirect to sign in
+        setError('Your session has expired. Please sign in again.');
+        await supabase.auth.signOut();
+        setTimeout(() => {
+          navigate('/signin');
+        }, 2000);
       }
     } catch (err) {
-      setError(err.message || 'Failed to load profile');
+      const errorMessage = err.message || 'Failed to load profile';
+      setError(errorMessage);
+      
+      // Check if it's an authentication error
+      if (errorMessage.includes('Unauthorized') || errorMessage.includes('Invalid or expired token') || errorMessage.includes('Not authenticated')) {
+        // Clear expired session
+        await supabase.auth.signOut();
+        setTimeout(() => {
+          navigate('/signin');
+        }, 2000);
+      }
     } finally {
       setLoading(false);
     }
@@ -211,7 +229,23 @@ const Profile = () => {
       {/* Error/Success Messages */}
       {error && (
         <div className="mb-4 p-4 bg-red-50 border-2 border-red-300 rounded-lg">
-          <p className="text-red-600 font-semibold">{error}</p>
+          <p className="text-red-600 font-semibold mb-3">{error}</p>
+          {(error.includes('Unauthorized') || error.includes('Invalid or expired token')) && (
+            <div className="flex gap-3">
+              <button
+                onClick={() => navigate('/signin')}
+                className="bg-umass-maroon text-umass-cream px-6 py-2 rounded-lg hover:bg-umass-maroonDark font-semibold transition-colors"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => navigate('/signup')}
+                className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 font-semibold transition-colors"
+              >
+                Sign Up
+              </button>
+            </div>
+          )}
         </div>
       )}
       {success && (

@@ -106,13 +106,14 @@ export async function POST(
     }
     
     // Check if item should be auto-removed (trigger handles this, but we check here too)
+    // Item is removed when it receives 2 or more reports for the same reason
     const { data: reports, error: countError } = await supabase
       .from('item_reports')
       .select('id')
       .eq('item_id', itemId)
       .eq('reason', reason);
     
-    if (!countError && reports && reports.length >= 5) {
+    if (!countError && reports && reports.length >= 2) {
       // Update item to unavailable
       await supabase
         .from('items')

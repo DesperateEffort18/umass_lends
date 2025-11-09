@@ -36,7 +36,7 @@ FOR SELECT
 TO authenticated
 USING (reporter_id = auth.uid());
 
--- Function to check and auto-remove items with 5+ reports for same reason
+-- Function to check and auto-remove items with 2+ reports for same reason
 CREATE OR REPLACE FUNCTION check_and_remove_reported_items()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -48,8 +48,8 @@ BEGIN
   WHERE item_id = NEW.item_id
     AND reason = NEW.reason;
   
-  -- If 5 or more reports for the same reason, mark item as unavailable
-  IF report_count >= 5 THEN
+  -- If 2 or more reports for the same reason, mark item as unavailable
+  IF report_count >= 2 THEN
     UPDATE items
     SET available = FALSE
     WHERE id = NEW.item_id;
@@ -59,7 +59,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger to auto-remove items with 5+ reports
+-- Create trigger to auto-remove items with 2+ reports
 DROP TRIGGER IF EXISTS auto_remove_reported_items ON item_reports;
 CREATE TRIGGER auto_remove_reported_items
   AFTER INSERT ON item_reports
