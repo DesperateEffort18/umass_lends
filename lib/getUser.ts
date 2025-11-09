@@ -1,19 +1,14 @@
-/**
- * User authentication helper
- * Gets the authenticated user from Supabase Auth session
- */
 import { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { User } from './types';
 import { ensureUser } from './ensureUser';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables. Please check your .env file.');
 }
-
 /**
  * Get the current authenticated user from the request
  * Extracts the Authorization token from headers and validates with Supabase
