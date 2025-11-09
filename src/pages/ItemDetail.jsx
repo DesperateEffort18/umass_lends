@@ -749,10 +749,12 @@ const ItemDetail = () => {
               const response = await reportsAPI.report(itemId, reason);
               if (response.success) {
                 showSuccess('Report submitted successfully! Thank you for helping keep our community safe.');
-                if (response.data?.auto_removed) {
-                  showWarning('This item has been automatically removed due to multiple reports.');
-                  // Reload item to reflect removal
-                  await loadItem();
+                if (response.data?.auto_deleted) {
+                  showWarning('This item has been automatically deleted due to multiple reports.');
+                  // Navigate away since item no longer exists
+                  setTimeout(() => {
+                    navigate('/');
+                  }, 2000);
                 }
               } else {
                 showError(response.error || 'Failed to submit report');

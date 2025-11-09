@@ -1,9 +1,7 @@
--- Update Report Threshold Migration
--- Changes the auto-deletion threshold from 5 reports to 2 reports
--- Also changes from marking unavailable to completely deleting items
--- Run this in your Supabase SQL Editor
+-- Update Report Function to Delete Items Instead of Marking Unavailable
+-- Run this in your Supabase SQL Editor to update the trigger function
 
--- Update the function to check for 2+ reports and delete items completely
+-- Update the function to delete items completely instead of marking unavailable
 CREATE OR REPLACE FUNCTION check_and_remove_reported_items()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -19,6 +17,7 @@ BEGIN
   -- Note: This will cascade delete borrow_requests, messages, and item_reports
   -- due to foreign key constraints with ON DELETE CASCADE
   -- Note: Image deletion from storage must be handled in the API route
+  -- (Database triggers cannot access Supabase Storage directly)
   IF report_count >= 2 THEN
     DELETE FROM items
     WHERE id = NEW.item_id;

@@ -105,28 +105,65 @@ export async function POST(
       return addCorsHeaders(response);
     }
     
-    // Check if item should be auto-removed (trigger handles this, but we check here too)
-    // Item is removed when it receives 2 or more reports for the same reason
+    // Check if item should be auto-deleted (trigger handles this, but we check here too)
+    // Item is deleted when it receives 2 or more reports for the same reason
     const { data: reports, error: countError } = await supabase
       .from('item_reports')
       .select('id')
       .eq('item_id', itemId)
       .eq('reason', reason);
     
+    let itemDeleted = false;
     if (!countError && reports && reports.length >= 2) {
-      // Update item to unavailable
-      await supabase
+      // Get item to delete image from storage
+      const { data: itemToDelete } = await supabase
         .from('items')
-        .update({ available: false })
+        .select('image_url')
+        .eq('id', itemId)
+        .single();
+      
+      // Delete image from storage if it exists
+      if (itemToDelete?.image_url) {
+        try {
+          // Extract file path from URL
+          const url = new URL(itemToDelete.image_url);
+          const pathParts = url.pathname.split('/');
+          const filePath = pathParts.slice(pathParts.indexOf('item-images')).join('/');
+          
+          // Delete from Supabase Storage
+          const { error: storageError } = await supabase.storage
+            .from('item-images')
+            .remove([filePath]);
+          
+          if (storageError) {
+            console.error('Error deleting image from storage:', storageError);
+            // Continue with item deletion even if image deletion fails
+          }
+        } catch (imageError) {
+          console.error('Error processing image deletion:', imageError);
+          // Continue with item deletion even if image deletion fails
+        }
+      }
+      
+      // Delete the item completely (this will cascade delete borrow_requests, messages, and reports)
+      const { error: deleteError } = await supabase
+        .from('items')
+        .delete()
         .eq('id', itemId);
+      
+      if (!deleteError) {
+        itemDeleted = true;
+      } else {
+        console.error('Error deleting item:', deleteError);
+      }
     }
     
-    const response = NextResponse.json<ApiResponse<{ report: any; auto_removed: boolean }>>(
+    const response = NextResponse.json<ApiResponse<{ report: any; auto_deleted: boolean }>>(
       { 
         success: true, 
         data: { 
           report,
-          auto_removed: reports && reports.length >= 5 
+          auto_deleted: itemDeleted
         } 
       },
       { status: 200 }

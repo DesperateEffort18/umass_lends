@@ -36,7 +36,7 @@ FOR SELECT
 TO authenticated
 USING (reporter_id = auth.uid());
 
--- Function to check and auto-remove items with 2+ reports for same reason
+-- Function to check and auto-delete items with 2+ reports for same reason
 CREATE OR REPLACE FUNCTION check_and_remove_reported_items()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -48,10 +48,11 @@ BEGIN
   WHERE item_id = NEW.item_id
     AND reason = NEW.reason;
   
-  -- If 2 or more reports for the same reason, mark item as unavailable
+  -- If 2 or more reports for the same reason, delete the item completely
+  -- Note: This will cascade delete borrow_requests, messages, and item_reports
+  -- due to foreign key constraints with ON DELETE CASCADE
   IF report_count >= 2 THEN
-    UPDATE items
-    SET available = FALSE
+    DELETE FROM items
     WHERE id = NEW.item_id;
   END IF;
   
