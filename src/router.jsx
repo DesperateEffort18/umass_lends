@@ -10,6 +10,9 @@ import CreateItem from "./pages/CreateItem";
 import MyItems from "./pages/MyItems";
 import BorrowRequests from "./pages/BorrowRequests";
 import Profile from "./pages/Profile";
+import CreateRequest from "./pages/CreateRequest";
+import MyRequests from "./pages/MyRequests";
+import AvailableRequests from "./pages/AvailableRequests";
 import Layout from "./components/Layout";
 
 export const router = createBrowserRouter([
@@ -57,6 +60,30 @@ export const router = createBrowserRouter([
                 element: (
                     <PrivateRoute>
                         <Profile />
+                    </PrivateRoute>
+                ),
+            },
+            {
+                path: "/requests/new",
+                element: (
+                    <PrivateRoute>
+                        <CreateRequest />
+                    </PrivateRoute>
+                ),
+            },
+            {
+                path: "/my-requests",
+                element: (
+                    <PrivateRoute>
+                        <MyRequests />
+                    </PrivateRoute>
+                ),
+            },
+            {
+                path: "/available-requests",
+                element: (
+                    <PrivateRoute>
+                        <AvailableRequests />
                     </PrivateRoute>
                 ),
             },

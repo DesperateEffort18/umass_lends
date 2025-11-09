@@ -101,6 +101,12 @@ const Navbar = () => {
                   </span>
                 )}
               </Link>
+              <Link to="/my-requests" className="hover:text-umass-lightCream transition-colors font-medium">
+                My Requests
+              </Link>
+              <Link to="/available-requests" className="hover:text-umass-lightCream transition-colors font-medium">
+                Available Requests
+              </Link>
               <Link to="/items/new" className="hover:text-umass-lightCream transition-colors font-medium">
                 List Item
               </Link>
