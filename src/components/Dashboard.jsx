@@ -1,35 +1,18 @@
 import React from 'react';
 import { UserAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 
 const Dashboard = () => {
-    const { session, signOut } = UserAuth();
-    const navigate = useNavigate();
-
-    const handleSignOut = async (e) => {
-        e.preventDefault();
-        try{
-            await signOut();
-            navigate("/");
-        } catch (err) {
-            console.error(err);
-        }
-    };
+    const { session } = UserAuth();
     return (
         <div>
             <div className="p-4 border-b-2 border-umass-maroon bg-white shadow-sm">
-                <div className="container mx-auto flex justify-between items-center">
+                <div className="container mx-auto">
                     <div>
                         <h1 className="text-2xl font-bold text-umass-maroon">Dashboard</h1>
                         <p className="text-umass-gray">Welcome, {session?.user?.email}</p>
                     </div>
-                    <button 
-                        onClick={handleSignOut}
-                        className="px-4 py-2 border-2 border-umass-maroon text-umass-maroon rounded-lg hover:bg-umass-lightGray font-semibold transition-colors"
-                    >
-                        Sign out
-                    </button>
                 </div>
             </div>
 

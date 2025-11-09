@@ -7,12 +7,22 @@ import OpenAI from 'openai';
 import { Item } from './types';
 import { getCurrentAcademicPeriod, type AcademicPeriod } from './recommendationEngine';
 
-// Initialize OpenAI client (only if API key is available)
-const openai = process.env.OPENAI_API_KEY
-  ? new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    })
-  : null;
+// Lazy initialization of OpenAI client to avoid blocking module load
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI | null {
+  if (!openai && process.env.OPENAI_API_KEY) {
+    try {
+      openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+      });
+    } catch (error) {
+      console.error('Failed to initialize OpenAI client:', error);
+      return null;
+    }
+  }
+  return openai;
+}
 
 /**
  * Get season/period description for AI context
@@ -38,7 +48,8 @@ export async function getAIRecommendations(
   period: AcademicPeriod = getCurrentAcademicPeriod(),
   limit: number = 3
 ): Promise<{ itemIds: string[]; explanation: string }> {
-  if (!openai || !process.env.OPENAI_API_KEY) {
+  const client = getOpenAIClient();
+  if (!client || !process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is not set in environment variables');
   }
 
@@ -89,12 +100,12 @@ Respond in JSON format with this exact structure:
 
 IMPORTANT: Only include item IDs that exist in the list above. Return exactly ${limit} item IDs.`;
 
-  if (!openai) {
+  if (!client) {
     throw new Error('OpenAI client not initialized');
   }
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await client.chat.completions.create({
       model: 'gpt-4o-mini', // Using the more cost-effective model
       messages: [
         {

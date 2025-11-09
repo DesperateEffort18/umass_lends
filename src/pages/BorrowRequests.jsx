@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserAuth } from '../context/AuthContext';
 import { borrowAPI, itemsAPI } from '../utils/api';
+import CountdownTimer from '../components/CountdownTimer';
 
 const BorrowRequests = () => {
   const navigate = useNavigate();
@@ -156,32 +157,49 @@ const BorrowRequests = () => {
           <div className="space-y-4">
             {myRequestsAsBorrower.map((request) => {
               const item = items[request.item_id];
+              const returnDeadline = request.borrow_end_date && request.status === 'approved'
+                ? new Date(request.borrow_end_date + 'T23:59:59').toISOString()
+                : null;
+
               return (
                 <div
                   key={request.id}
-                  className="border rounded-lg p-4 flex justify-between items-center"
+                  className="border rounded-lg p-4"
                 >
-                  <div>
-                    <Link
-                      to={`/items/${request.item_id}`}
-                      className="text-umass-maroon hover:text-umass-maroonDark font-semibold transition-colors"
-                    >
-                      {item?.title || 'Loading...'}
-                    </Link>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Owner: {request.owner_name || request.owner_email || 'Unknown User'}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Dates: {request.borrow_start_date} to {request.borrow_end_date}
-                    </p>
-                    <span
-                      className={`inline-block px-2 py-1 rounded text-sm mt-2 ${getStatusColor(
-                        request.status
-                      )}`}
-                    >
-                      {request.status}
-                    </span>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <Link
+                        to={`/items/${request.item_id}`}
+                        className="text-umass-maroon hover:text-umass-maroonDark font-semibold text-lg transition-colors"
+                      >
+                        {item?.title || 'Loading...'}
+                      </Link>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Owner: {request.owner_name || request.owner_email || 'Unknown User'}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Start: {new Date(request.borrow_start_date).toLocaleDateString()} - 
+                        End: {new Date(request.borrow_end_date).toLocaleDateString()}
+                      </p>
+                      <span
+                        className={`inline-block px-2 py-1 rounded text-sm mt-2 ${getStatusColor(
+                          request.status
+                        )}`}
+                      >
+                        {request.status}
+                      </span>
+                    </div>
                   </div>
+                  
+                  {/* Countdown Timer for Approved Requests */}
+                  {returnDeadline && (
+                    <div className="mt-3">
+                      <CountdownTimer 
+                        endDate={returnDeadline}
+                        label="Time until return deadline"
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -201,46 +219,63 @@ const BorrowRequests = () => {
             {myRequestsAsOwner.map((request) => {
               const item = items[request.item_id];
               const isOwner = request.owner_id === session.user?.id;
+              const returnDeadline = request.borrow_end_date && request.status === 'approved'
+                ? new Date(request.borrow_end_date + 'T23:59:59').toISOString()
+                : null;
+
               return (
                 <div
                   key={request.id}
-                  className="border rounded-lg p-4 flex justify-between items-center"
+                  className="border rounded-lg p-4"
                 >
-                  <div>
-                    <Link
-                      to={`/items/${request.item_id}`}
-                      className="text-umass-maroon hover:text-umass-maroonDark font-semibold transition-colors"
-                    >
-                      {item?.title || 'Loading...'}
-                    </Link>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Requested by: {request.borrower_name || request.borrower_email || 'Unknown User'}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Dates: {request.borrow_start_date} to {request.borrow_end_date}
-                    </p>
-                    <span
-                      className={`inline-block px-2 py-1 rounded text-sm mt-2 ${getStatusColor(
-                        request.status
-                      )}`}
-                    >
-                      {request.status}
-                    </span>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <Link
+                        to={`/items/${request.item_id}`}
+                        className="text-umass-maroon hover:text-umass-maroonDark font-semibold text-lg transition-colors"
+                      >
+                        {item?.title || 'Loading...'}
+                      </Link>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Requested by: {request.borrower_name || request.borrower_email || 'Unknown User'}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Start: {new Date(request.borrow_start_date).toLocaleDateString()} - 
+                        End: {new Date(request.borrow_end_date).toLocaleDateString()}
+                      </p>
+                      <span
+                        className={`inline-block px-2 py-1 rounded text-sm mt-2 ${getStatusColor(
+                          request.status
+                        )}`}
+                      >
+                        {request.status}
+                      </span>
+                    </div>
+                    {isOwner && request.status === 'pending' && (
+                      <div className="flex gap-2 ml-4">
+                        <button
+                          onClick={() => handleApprove(request.id)}
+                          className="bg-green-600 text-umass-cream px-4 py-2 rounded hover:bg-green-700 font-semibold transition-colors"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleReject(request.id)}
+                          className="bg-red-600 text-umass-cream px-4 py-2 rounded hover:bg-red-700 font-semibold transition-colors"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  {isOwner && request.status === 'pending' && (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleApprove(request.id)}
-                        className="bg-green-600 text-umass-cream px-4 py-2 rounded hover:bg-green-700 font-semibold transition-colors"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => handleReject(request.id)}
-                        className="bg-red-600 text-umass-cream px-4 py-2 rounded hover:bg-red-700 font-semibold transition-colors"
-                      >
-                        Reject
-                      </button>
+                  
+                  {/* Countdown Timer for Approved Requests */}
+                  {returnDeadline && (
+                    <div className="mt-3">
+                      <CountdownTimer 
+                        endDate={returnDeadline}
+                        label="Time until return deadline"
+                      />
                     </div>
                   )}
                 </div>

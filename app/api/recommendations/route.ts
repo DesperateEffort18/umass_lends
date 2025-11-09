@@ -6,18 +6,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabaseClient';
 import { Item, ApiResponse } from '@/lib/types';
-import { addCorsHeaders, handleOptionsRequest } from '@/lib/cors';
+import { addCorsHeaders } from '@/lib/cors';
 import {
   getCurrentAcademicPeriod,
   type AcademicPeriod
 } from '@/lib/recommendationEngine';
-import { getAIRecommendations, getFallbackRecommendations } from '@/lib/openaiService';
 
 /**
  * Handle OPTIONS request for CORS preflight
+ * This handler is standalone and fast - no dependencies on other imports
  */
 export async function OPTIONS() {
-  return handleOptionsRequest();
+  const response = new NextResponse(null, { status: 200 });
+  response.headers.set('Access-Control-Allow-Origin', '*');
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  response.headers.set('Access-Control-Max-Age', '86400');
+  return response;
 }
 
 /**
@@ -30,6 +35,7 @@ export async function OPTIONS() {
  *   - useAI: whether to use AI recommendations (default: true, set to false for fallback)
  */
 export async function GET(request: NextRequest) {
+
   try {
     const { searchParams } = new URL(request.url);
     const limitParam = parseInt(searchParams.get('limit') || '3', 10);
@@ -86,6 +92,8 @@ export async function GET(request: NextRequest) {
     // Use AI recommendations if OpenAI API key is available and useAI is true
     if (useAI && process.env.OPENAI_API_KEY) {
       try {
+        // Dynamically import OpenAI service to avoid breaking if package is missing
+        const { getAIRecommendations, getFallbackRecommendations } = await import('@/lib/openaiService');
         const aiResult = await getAIRecommendations(items, currentPeriod, limit);
         recommendedItemIds = aiResult.itemIds;
         explanation = aiResult.explanation;
@@ -93,16 +101,30 @@ export async function GET(request: NextRequest) {
       } catch (aiError: any) {
         console.warn('AI recommendation failed, using fallback:', aiError.message);
         // Fall back to simple recommendations
-        const fallback = getFallbackRecommendations(items, currentPeriod, limit);
-        recommendedItemIds = fallback.itemIds;
-        explanation = fallback.explanation;
+        try {
+          const { getFallbackRecommendations } = await import('@/lib/openaiService');
+          const fallback = getFallbackRecommendations(items, currentPeriod, limit);
+          recommendedItemIds = fallback.itemIds;
+          explanation = fallback.explanation;
+        } catch (fallbackError: any) {
+          // Ultimate fallback: just return first N items
+          recommendedItemIds = items.slice(0, limit).map(item => item.id);
+          explanation = `Top ${limit} available items for ${currentPeriod.replace('_', ' ')}.`;
+        }
         aiPowered = false;
       }
     } else {
       // Use fallback if AI is disabled or API key is missing
-      const fallback = getFallbackRecommendations(items, currentPeriod, limit);
-      recommendedItemIds = fallback.itemIds;
-      explanation = fallback.explanation;
+      try {
+        const { getFallbackRecommendations } = await import('@/lib/openaiService');
+        const fallback = getFallbackRecommendations(items, currentPeriod, limit);
+        recommendedItemIds = fallback.itemIds;
+        explanation = fallback.explanation;
+      } catch (fallbackError: any) {
+        // Ultimate fallback: just return first N items
+        recommendedItemIds = items.slice(0, limit).map(item => item.id);
+        explanation = `Top ${limit} available items for ${currentPeriod.replace('_', ' ')}.`;
+      }
       aiPowered = false;
     }
 

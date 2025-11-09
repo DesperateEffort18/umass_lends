@@ -8,13 +8,19 @@ import { getSupabaseClient } from '@/lib/supabaseClient';
 import { getUser } from '@/lib/getUser';
 import { createItemSchema } from '@/lib/schemas';
 import { Item, ApiResponse } from '@/lib/types';
-import { addCorsHeaders, handleOptionsRequest } from '@/lib/cors';
+import { addCorsHeaders } from '@/lib/cors';
 
 /**
  * Handle OPTIONS request for CORS preflight
+ * Standalone handler to avoid import delays
  */
 export async function OPTIONS() {
-  return handleOptionsRequest();
+  const response = new NextResponse(null, { status: 200 });
+  response.headers.set('Access-Control-Allow-Origin', '*');
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  response.headers.set('Access-Control-Max-Age', '86400');
+  return response;
 }
 
 /**

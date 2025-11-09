@@ -128,6 +128,13 @@ export const borrowAPI = {
       method: 'POST',
     });
   },
+
+  // Mark item as returned
+  markReturned: (requestId) => {
+    return apiRequest(`/api/borrow/${requestId}/mark-returned`, {
+      method: 'POST',
+    });
+  },
 };
 
 // Messages API

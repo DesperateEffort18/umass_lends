@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserAuth } from '../context/AuthContext';
 import { itemsAPI, borrowAPI } from '../utils/api';
 import ItemCard from '../components/ItemCard';
+import CountdownTimer from '../components/CountdownTimer';
 
 const MyItems = () => {
   const navigate = useNavigate();
@@ -82,8 +83,22 @@ const MyItems = () => {
   // Get requests for my items
   const getRequestsForItem = (itemId) => {
     return borrowRequests.filter(
-      (req) => req.item_id === itemId && req.status === 'pending'
+      (req) => req.item_id === itemId && (req.status === 'pending' || req.status === 'approved')
     );
+  };
+
+  const handleMarkReturned = async (requestId) => {
+    try {
+      const response = await borrowAPI.markReturned(requestId);
+      if (response.success) {
+        alert('Item marked as returned! It is now available for borrowing again.');
+        loadData(); // Reload data
+      } else {
+        alert(`Error: ${response.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    }
   };
 
   if (!session) {
@@ -137,37 +152,76 @@ const MyItems = () => {
                 {/* Borrow Requests for this item */}
                 {requests.length > 0 && (
                   <div className="mt-4">
-                    <h3 className="font-semibold mb-2">Pending Requests:</h3>
+                    <h3 className="font-semibold mb-2">
+                      {requests.some(r => r.status === 'pending') ? 'Pending Requests:' : 'Active Borrows:'}
+                    </h3>
                     <div className="space-y-2">
-                      {requests.map((request) => (
-                        <div
-                          key={request.id}
-                          className="flex justify-between items-center p-3 bg-gray-50 rounded"
-                        >
-                          <div>
-                            <p className="font-semibold">
-                              Request from: {request.borrower_name || request.borrower_email || request.borrower_id}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              {request.borrow_start_date} to {request.borrow_end_date}
-                            </p>
+                      {requests.map((request) => {
+                        // Calculate return deadline (end of end date)
+                        const returnDeadline = request.borrow_end_date 
+                          ? new Date(request.borrow_end_date + 'T23:59:59').toISOString()
+                          : null;
+
+                        return (
+                          <div
+                            key={request.id}
+                            className="border rounded-lg p-4 bg-white shadow-sm"
+                          >
+                            <div className="flex justify-between items-start mb-3">
+                              <div className="flex-1">
+                                <p className="font-semibold text-lg">
+                                  {request.status === 'approved' ? 'Borrowed by: ' : 'Request from: '}
+                                  {request.borrower_name || request.borrower_email || request.borrower_id}
+                                </p>
+                                <p className="text-sm text-gray-600 mt-1">
+                                  Start: {new Date(request.borrow_start_date).toLocaleDateString()} - 
+                                  End: {new Date(request.borrow_end_date).toLocaleDateString()}
+                                </p>
+                                {request.status === 'approved' && (
+                                  <p className="text-sm text-umass-maroon font-medium mt-2">
+                                    Status: Currently Borrowed
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex gap-2 ml-4">
+                                {request.status === 'pending' ? (
+                                  <>
+                                    <button
+                                      onClick={() => handleApprove(request.id)}
+                                      className="bg-green-600 text-umass-cream px-4 py-2 rounded hover:bg-green-700 font-semibold transition-colors"
+                                    >
+                                      Approve
+                                    </button>
+                                    <button
+                                      onClick={() => handleReject(request.id)}
+                                      className="bg-red-600 text-umass-cream px-4 py-2 rounded hover:bg-red-700 font-semibold transition-colors"
+                                    >
+                                      Reject
+                                    </button>
+                                  </>
+                                ) : (
+                                  <button
+                                    onClick={() => handleMarkReturned(request.id)}
+                                    className="bg-umass-maroon text-umass-cream px-4 py-2 rounded hover:bg-umass-maroonDark font-semibold transition-colors"
+                                  >
+                                    Mark as Returned
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Countdown Timer for Approved Requests */}
+                            {request.status === 'approved' && returnDeadline && (
+                              <div className="mt-3">
+                                <CountdownTimer 
+                                  endDate={returnDeadline}
+                                  label="Time until return deadline"
+                                />
+                              </div>
+                            )}
                           </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleApprove(request.id)}
-                              className="bg-green-600 text-umass-cream px-4 py-2 rounded hover:bg-green-700 font-semibold transition-colors"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleReject(request.id)}
-                              className="bg-red-600 text-umass-cream px-4 py-2 rounded hover:bg-red-700 font-semibold transition-colors"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}

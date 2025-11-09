@@ -27,7 +27,7 @@ const Navbar = () => {
           🏛️ UMass Lends
         </Link>
         
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-6 items-center">
           <Link to="/" className="hover:text-umass-lightCream transition-colors font-medium">
             Browse
           </Link>
@@ -54,14 +54,14 @@ const Navbar = () => {
               </button>
             </>
           ) : (
-            <>
+            <div className="flex gap-3 items-center">
               <Link to="/signin" className="hover:text-umass-lightCream transition-colors font-medium">
                 Sign In
               </Link>
               <Link to="/signup" className="bg-umass-lightCream text-umass-maroon px-4 py-2 rounded-lg hover:bg-umass-cream transition-colors font-medium">
                 Sign Up
               </Link>
-            </>
+            </div>
           )}
         </div>
       </div>
