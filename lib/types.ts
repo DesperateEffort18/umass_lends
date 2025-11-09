@@ -47,8 +47,12 @@ export interface Message {
   id: string;
   item_id: string;
   sender_id: string;
+  participant_id: string; // The other person in the conversation (owner or borrower)
   text: string;
   created_at?: string;
+  // Display fields
+  sender_name?: string;
+  sender_email?: string;
 }
 
 export interface ApiResponse<T> {

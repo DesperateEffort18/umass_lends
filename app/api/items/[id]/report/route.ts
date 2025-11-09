@@ -106,7 +106,7 @@ export async function POST(
     }
     
     // Check if item should be auto-deleted (trigger handles this, but we check here too)
-    // Item is deleted when it receives 2 or more reports for the same reason
+    // Item is deleted when it receives 5 or more reports for the same reason
     const { data: reports, error: countError } = await supabase
       .from('item_reports')
       .select('id')
@@ -114,7 +114,7 @@ export async function POST(
       .eq('reason', reason);
     
     let itemDeleted = false;
-    if (!countError && reports && reports.length >= 2) {
+    if (!countError && reports && reports.length >= 5) {
       // Get item to delete image from storage
       const { data: itemToDelete } = await supabase
         .from('items')

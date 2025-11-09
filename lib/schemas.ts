@@ -45,6 +45,7 @@ export const updateBorrowRequestStatusSchema = z.object({
 export const createMessageSchema = z.object({
   item_id: z.string().uuid('Invalid item ID'),
   text: z.string().min(1, 'Message text is required').max(1000, 'Message must be less than 1000 characters'),
+  participant_id: z.string().uuid('Invalid participant ID').optional(), // Optional: required when owner sends to specific borrower
 });
 
 // Query parameter schemas

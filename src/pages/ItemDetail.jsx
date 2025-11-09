@@ -353,11 +353,17 @@ const ItemDetail = () => {
   const loadMessages = async () => {
     try {
       const response = await messagesAPI.getByItem(id);
-      if (response.success) {
+      if (response && response.success) {
         setMessages(response.data || []);
+      } else {
+        // If response is not successful, set empty messages
+        setMessages([]);
       }
     } catch (err) {
-      console.error('Error loading messages:', err);
+      // Silently handle errors - just set empty messages
+      // This prevents error popups when user is not authenticated
+      console.log('Error loading messages (using empty messages):', err.message || err);
+      setMessages([]);
     } finally {
       setMessagesLoading(false);
     }
@@ -769,7 +775,14 @@ const ItemDetail = () => {
 
         {/* Right Column - Messages */}
         <div>
-          <h2 className="text-2xl font-bold mb-4">Messages</h2>
+          <h2 className="text-2xl font-bold mb-4">
+            {session?.user?.id === item.owner_id ? 'All Conversations' : 'Private Conversation'}
+          </h2>
+          {session?.user?.id !== item.owner_id && (
+            <p className="text-sm text-gray-600 mb-2">
+              This is a private conversation between you and the item owner. Other users cannot see your messages.
+            </p>
+          )}
 
           {/* Messages List */}
           <div className="border rounded-lg p-4 mb-4 h-64 overflow-y-auto">
@@ -805,21 +818,32 @@ const ItemDetail = () => {
 
           {/* Send Message Form */}
           {session ? (
-            <form onSubmit={handleSendMessage} className="flex gap-2">
-              <input
-                type="text"
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-1 px-4 py-2 border rounded-lg"
-              />
-              <button
-                type="submit"
-                className="bg-umass-maroon text-umass-cream px-6 py-2 rounded-lg hover:bg-umass-maroonDark font-semibold transition-colors"
-              >
-                Send
-              </button>
-            </form>
+            <>
+              {session?.user?.id === item.owner_id && messages.length === 0 ? (
+                <div className="bg-blue-50 border border-blue-300 text-blue-700 px-4 py-3 rounded">
+                  <p className="text-sm font-semibold mb-1">No conversations yet</p>
+                  <p className="text-xs">
+                    Wait for a borrower to message you first, or you can message them from their borrow request on the "Requests" page.
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleSendMessage} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    placeholder="Type a message..."
+                    className="flex-1 px-4 py-2 border rounded-lg"
+                  />
+                  <button
+                    type="submit"
+                    className="bg-umass-maroon text-umass-cream px-6 py-2 rounded-lg hover:bg-umass-maroonDark font-semibold transition-colors"
+                  >
+                    Send
+                  </button>
+                </form>
+              )}
+            </>
           ) : (
             <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
               Please sign in to send a message.

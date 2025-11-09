@@ -31,10 +31,10 @@ export async function POST(request: NextRequest) {
     
     const supabase = getSupabaseClient();
     
-    // Verify that the item exists
+    // Get the item to verify it exists and get the owner_id
     const { data: item, error: itemError } = await supabase
       .from('items')
-      .select('id')
+      .select('id, owner_id')
       .eq('id', validatedData.item_id)
       .single();
     
@@ -46,12 +46,63 @@ export async function POST(request: NextRequest) {
       return addCorsHeaders(response);
     }
     
+    // Determine participant_id for private conversation:
+    // - If sender is a borrower: participant_id = owner
+    // - If sender is the owner: participant_id = borrower (from request body or find from existing conversation)
+    let participantId: string;
+    
+    if (user.id === item.owner_id) {
+      // Owner is sending a message
+      if (validatedData.participant_id) {
+        // Owner specified which borrower they're talking to
+        participantId = validatedData.participant_id;
+      } else {
+        // Owner didn't specify, find the most recent conversation
+        // Get the most recent message for this item where owner is involved
+        const { data: recentMessage } = await supabase
+          .from('messages')
+          .select('sender_id, participant_id')
+          .eq('item_id', validatedData.item_id)
+          .or(`sender_id.eq.${user.id},participant_id.eq.${user.id}`)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (recentMessage) {
+          // Determine the borrower from the conversation
+          participantId = recentMessage.sender_id === user.id 
+            ? recentMessage.participant_id 
+            : recentMessage.sender_id;
+        } else {
+          // No existing conversation - owner can't send first message without knowing borrower
+          const response = NextResponse.json<ApiResponse<null>>(
+            { success: false, error: 'No conversations yet. Wait for a borrower to message you first.' },
+            { status: 400 }
+          );
+          return addCorsHeaders(response);
+        }
+      }
+    } else {
+      // Borrower is sending a message
+      participantId = item.owner_id;
+    }
+    
+    // Ensure participant_id is different from sender_id
+    if (participantId === user.id) {
+      const response = NextResponse.json<ApiResponse<null>>(
+        { success: false, error: 'Cannot send message to yourself' },
+        { status: 400 }
+      );
+      return addCorsHeaders(response);
+    }
+    
     // Insert message into database
     const { data, error } = await supabase
       .from('messages')
       .insert({
         item_id: validatedData.item_id,
         sender_id: user.id,
+        participant_id: participantId,
         text: validatedData.text,
       })
       .select()
@@ -102,10 +153,36 @@ export async function POST(request: NextRequest) {
 
 /**
  * GET /api/messages?itemId=xxx
- * Get all messages for a specific item
+ * Get messages for a specific item (private conversation)
+ * - If user is owner: returns all conversations (all messages for the item, grouped by participant)
+ * - If user is borrower: returns only their conversation with the owner
  */
 export async function GET(request: NextRequest) {
   try {
+    // Try to get user, but don't require authentication (for viewing items)
+    let user = null;
+    try {
+      user = await getUser(request);
+    } catch (error) {
+      // User is not authenticated - return empty messages
+      const { searchParams } = new URL(request.url);
+      const itemId = searchParams.get('itemId');
+      
+      if (!itemId) {
+        const response = NextResponse.json<ApiResponse<null>>(
+          { success: false, error: 'itemId query parameter is required' },
+          { status: 400 }
+        );
+        return addCorsHeaders(response);
+      }
+      
+      const response = NextResponse.json<ApiResponse<Message[]>>(
+        { success: true, data: [] },
+        { status: 200 }
+      );
+      return addCorsHeaders(response);
+    }
+    
     const { searchParams } = new URL(request.url);
     const itemId = searchParams.get('itemId');
     
@@ -122,12 +199,43 @@ export async function GET(request: NextRequest) {
     
     const supabase = getSupabaseClient();
     
-    // Fetch messages for the item
-    const { data: messages, error } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('item_id', validatedQuery.itemId)
-      .order('created_at', { ascending: true });
+    // Get the item owner
+    const { data: item, error: itemError } = await supabase
+      .from('items')
+      .select('owner_id')
+      .eq('id', validatedQuery.itemId)
+      .single();
+    
+    if (itemError || !item) {
+      const response = NextResponse.json<ApiResponse<null>>(
+        { success: false, error: 'Item not found' },
+        { status: 404 }
+      );
+      return addCorsHeaders(response);
+    }
+    
+    // Fetch messages based on user role
+    let messagesQuery;
+    
+    if (user.id === item.owner_id) {
+      // Owner sees all conversations (all messages for the item)
+      messagesQuery = supabase
+        .from('messages')
+        .select('*')
+        .eq('item_id', validatedQuery.itemId)
+        .order('created_at', { ascending: true });
+    } else {
+      // Borrower sees only their conversation with the owner
+      // Messages where: (sender is borrower AND participant is owner) OR (sender is owner AND participant is borrower)
+      messagesQuery = supabase
+        .from('messages')
+        .select('*')
+        .eq('item_id', validatedQuery.itemId)
+        .or(`sender_id.eq.${user.id},participant_id.eq.${user.id}`)
+        .order('created_at', { ascending: true });
+    }
+    
+    const { data: messages, error } = await messagesQuery;
     
     if (error) {
       console.error('Error fetching messages:', error);
@@ -146,9 +254,23 @@ export async function GET(request: NextRequest) {
       return addCorsHeaders(response);
     }
     
+    // Filter messages for borrowers to show only their conversation with the owner
+    let filteredMessages = messages;
+    if (user.id !== item.owner_id) {
+      // Borrower: only show messages where they are involved with the owner
+      filteredMessages = messages.filter((msg: any) => {
+        // Message is part of this conversation if:
+        // (sender is borrower AND participant is owner) OR (sender is owner AND participant is borrower)
+        return (
+          (msg.sender_id === user.id && msg.participant_id === item.owner_id) ||
+          (msg.sender_id === item.owner_id && msg.participant_id === user.id)
+        );
+      });
+    }
+    
     // Get all unique sender IDs
     const senderIds = new Set<string>();
-    messages.forEach((msg: any) => {
+    filteredMessages.forEach((msg: any) => {
       senderIds.add(msg.sender_id);
     });
     
@@ -170,7 +292,7 @@ export async function GET(request: NextRequest) {
     });
     
     // Transform the data to include sender information
-    const transformedData = messages.map((message: any) => {
+    const transformedData = filteredMessages.map((message: any) => {
       const sender = usersMap.get(message.sender_id);
       
       return {

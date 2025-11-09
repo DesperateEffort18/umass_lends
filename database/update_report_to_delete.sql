@@ -13,12 +13,12 @@ BEGIN
   WHERE item_id = NEW.item_id
     AND reason = NEW.reason;
   
-  -- If 2 or more reports for the same reason, delete the item completely
+  -- If 5 or more reports for the same reason, delete the item completely
   -- Note: This will cascade delete borrow_requests, messages, and item_reports
   -- due to foreign key constraints with ON DELETE CASCADE
   -- Note: Image deletion from storage must be handled in the API route
   -- (Database triggers cannot access Supabase Storage directly)
-  IF report_count >= 2 THEN
+  IF report_count >= 5 THEN
     DELETE FROM items
     WHERE id = NEW.item_id;
   END IF;

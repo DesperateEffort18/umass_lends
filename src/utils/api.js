@@ -169,9 +169,17 @@ export const borrowAPI = {
 
 // Messages API
 export const messagesAPI = {
-  // Get messages for an item
-  getByItem: (itemId) => {
-    return publicApiRequest(`/api/messages?itemId=${itemId}`);
+  // Get messages for an item (requires authentication for private conversations)
+  getByItem: async (itemId) => {
+    try {
+      // Try authenticated request first
+      return await apiRequest(`/api/messages?itemId=${itemId}`);
+    } catch (error) {
+      // If not authenticated or any other error, return empty messages
+      // This allows the page to load even if user is not signed in
+      console.log('Error fetching messages (returning empty):', error.message);
+      return { success: true, data: [] };
+    }
   },
 
   // Send message

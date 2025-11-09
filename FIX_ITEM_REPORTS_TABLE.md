@@ -102,7 +102,7 @@ CREATE POLICY "Allow all operations on item_reports" ON item_reports FOR ALL USI
 1. The error should be resolved
 2. Users will be able to report items
 3. Duplicate reports (same user, same item, same reason) will be prevented
-4. Items with 2+ reports for the same reason will be automatically deleted completely
+4. Items with 5+ reports for the same reason will be automatically deleted completely
 
 ## Table Structure
 
@@ -124,7 +124,7 @@ CREATE POLICY "Allow all operations on item_reports" ON item_reports FOR ALL USI
 - **fk_reporter**: Foreign key to users table (cascades on delete)
 
 ### Features
-- **Auto-deletion**: When an item receives 2+ reports for the same reason, it's automatically deleted completely (including image from storage, borrow requests, messages, and reports)
+- **Auto-deletion**: When an item receives 5+ reports for the same reason, it's automatically deleted completely (including image from storage, borrow requests, messages, and reports)
 - **Duplicate prevention**: Users can't report the same item for the same reason twice
 - **Self-report prevention**: Users cannot report their own items (enforced in API)
 
