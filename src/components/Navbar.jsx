@@ -107,6 +107,9 @@ const Navbar = () => {
               <Link to="/dashboard" className="hover:text-umass-lightCream transition-colors font-medium">
                 Dashboard
               </Link>
+              <Link to="/profile" className="hover:text-umass-lightCream transition-colors font-medium">
+                Profile
+              </Link>
               <button
                 onClick={handleSignOut}
                 className="hover:text-umass-lightCream transition-colors font-medium"

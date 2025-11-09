@@ -31,7 +31,7 @@ export async function GET(
     
     const supabase = getSupabaseClient();
     
-    const { data, error } = await supabase
+    const { data: item, error } = await supabase
       .from('items')
       .select('*')
       .eq('id', id)
@@ -54,8 +54,33 @@ export async function GET(
       );
     }
     
+    // Fetch owner information
+    let ownerInfo = null;
+    if (item.owner_id) {
+      const { data: owner, error: ownerError } = await supabase
+        .from('users')
+        .select('id, name, email')
+        .eq('id', item.owner_id)
+        .single();
+      
+      if (!ownerError && owner) {
+        ownerInfo = {
+          id: owner.id,
+          name: owner.name || owner.email || 'Unknown User',
+          email: owner.email,
+        };
+      }
+    }
+    
+    // Add owner info to item data
+    const itemWithOwner = {
+      ...item,
+      owner_name: ownerInfo?.name,
+      owner_email: ownerInfo?.email,
+    };
+    
     const response = NextResponse.json<ApiResponse<Item>>(
-      { success: true, data: data as Item },
+      { success: true, data: itemWithOwner as Item },
       { status: 200 }
     );
     return addCorsHeaders(response);

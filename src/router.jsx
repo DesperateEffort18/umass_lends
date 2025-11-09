@@ -9,6 +9,7 @@ import ItemDetail from "./pages/ItemDetail";
 import CreateItem from "./pages/CreateItem";
 import MyItems from "./pages/MyItems";
 import BorrowRequests from "./pages/BorrowRequests";
+import Profile from "./pages/Profile";
 import Layout from "./components/Layout";
 
 export const router = createBrowserRouter([
@@ -48,6 +49,14 @@ export const router = createBrowserRouter([
                 element: (
                     <PrivateRoute>
                         <BorrowRequests />
+                    </PrivateRoute>
+                ),
+            },
+            {
+                path: "/profile",
+                element: (
+                    <PrivateRoute>
+                        <Profile />
                     </PrivateRoute>
                 ),
             },

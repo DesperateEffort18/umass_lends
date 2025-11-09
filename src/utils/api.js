@@ -198,11 +198,69 @@ export const recommendationsAPI = {
   },
 };
 
+// Profile API
+export const profileAPI = {
+  // Get user profile
+  get: () => {
+    return apiRequest('/api/profile');
+  },
+
+  // Update user profile
+  update: (profileData) => {
+    return apiRequest('/api/profile', {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
+    });
+  },
+
+  // Change password
+  changePassword: (currentPassword, newPassword) => {
+    return apiRequest('/api/profile/change-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword,
+      }),
+    });
+  },
+};
+
+// Collateral API
+export const collateralAPI = {
+  // Get collateral recommendations for an item
+  getRecommendations: (itemId, limit = 5) => {
+    return publicApiRequest(`/api/collateral?itemId=${itemId}&limit=${limit}`);
+  },
+};
+
+// Users API
+export const usersAPI = {
+  // Get user profile by ID (public info only)
+  getById: (userId) => {
+    return publicApiRequest(`/api/users/${userId}`);
+  },
+};
+
+// Reports API
+export const reportsAPI = {
+  // Report an item
+  report: (itemId, reason) => {
+    return apiRequest(`/api/items/${itemId}/report`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  },
+};
+
 // Export default API helper
 export default {
   items: itemsAPI,
   borrow: borrowAPI,
   messages: messagesAPI,
   recommendations: recommendationsAPI,
+  profile: profileAPI,
+  collateral: collateralAPI,
+  users: usersAPI,
+  reports: reportsAPI,
 };
 

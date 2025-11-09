@@ -6,9 +6,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserAuth } from '../context/AuthContext';
-import { itemsAPI, borrowAPI, messagesAPI } from '../utils/api';
+import { itemsAPI, borrowAPI, messagesAPI, collateralAPI, reportsAPI } from '../utils/api';
 import Notification from '../components/Notification';
 import { useNotification } from '../hooks/useNotification';
+import CollateralModal from '../components/CollateralModal';
+import UserInfoModal from '../components/UserInfoModal';
+import ReportModal from '../components/ReportModal';
 // Note: You'll need to implement useRealtimeMessages hook or use the example
 // For now, we'll use a simpler approach with polling
 
@@ -35,6 +38,17 @@ const ItemDetail = () => {
   const [submitting, setSubmitting] = useState(false);
   const [messageText, setMessageText] = useState('');
   const { notification, showSuccess, showError, showWarning, hideNotification } = useNotification();
+  
+  // Collateral recommendations
+  const [showCollateralModal, setShowCollateralModal] = useState(false);
+  const [collateralRecommendations, setCollateralRecommendations] = useState(null);
+  const [loadingCollateral, setLoadingCollateral] = useState(false);
+  
+  // User info modal
+  const [showUserInfoModal, setShowUserInfoModal] = useState(false);
+  
+  // Report modal
+  const [showReportModal, setShowReportModal] = useState(false);
 
   // Get today's date in local timezone (YYYY-MM-DD format)
   // This ensures users can select today's date regardless of their timezone
@@ -97,6 +111,34 @@ const ItemDetail = () => {
   useEffect(() => {
     loadItem();
   }, [id]);
+
+  // Calculate isOwner and isAvailable (must be defined before useEffect that uses them)
+  const isOwner = session && item && session.user?.id === item.owner_id;
+  const isAvailable = item?.available;
+
+  // Load collateral recommendations when borrow form is shown
+  useEffect(() => {
+    if (showBorrowForm && item && !isOwner) {
+      loadCollateralRecommendations();
+    }
+  }, [showBorrowForm, item, isOwner]);
+
+  const loadCollateralRecommendations = async () => {
+    if (!item) return;
+    
+    try {
+      setLoadingCollateral(true);
+      const response = await collateralAPI.getRecommendations(item.id, 5);
+      if (response.success && response.data) {
+        setCollateralRecommendations(response.data);
+      }
+    } catch (err) {
+      console.error('Error loading collateral recommendations:', err);
+      // Don't show error to user, just don't show recommendations
+    } finally {
+      setLoadingCollateral(false);
+    }
+  };
 
   const loadItem = async () => {
     try {
@@ -321,9 +363,6 @@ const ItemDetail = () => {
     }
   };
 
-  const isOwner = session && item && session.user?.id === item.owner_id;
-  const isAvailable = item?.available;
-
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -382,6 +421,23 @@ const ItemDetail = () => {
           {/* Item Info */}
           <h1 className="text-3xl font-bold mb-4">{item.title}</h1>
           <p className="text-gray-700 mb-4">{item.description}</p>
+          
+          {/* Owner Information */}
+          {item.owner_name && (
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-1">Uploaded by:</p>
+              <button
+                onClick={() => {
+                  if (item.owner_id) {
+                    setShowUserInfoModal(true);
+                  }
+                }}
+                className="text-umass-maroon hover:text-umass-maroonDark font-semibold underline transition-colors"
+              >
+                {item.owner_name}
+              </button>
+            </div>
+          )}
 
           <div className="space-y-2 mb-6">
             {item.category && (
@@ -413,14 +469,54 @@ const ItemDetail = () => {
           {!isOwner && isAvailable && session && (
             <div className="mb-6">
               {!showBorrowForm ? (
-                <button
-                  onClick={() => setShowBorrowForm(true)}
-                  className="w-full bg-umass-maroon text-umass-cream px-6 py-3 rounded-lg hover:bg-umass-maroonDark font-semibold transition-colors shadow-md"
-                >
-                  Request to Borrow
-                </button>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => setShowBorrowForm(true)}
+                    className="w-full bg-umass-maroon text-umass-cream px-6 py-3 rounded-lg hover:bg-umass-maroonDark font-semibold transition-colors shadow-md"
+                  >
+                    Request to Borrow
+                  </button>
+                  {/* Report Button */}
+                  <div className="flex justify-center">
+                    <button
+                      onClick={() => setShowReportModal(true)}
+                      className="text-sm bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 font-medium transition-colors shadow-sm"
+                    >
+                      🚨 Report Item
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <form onSubmit={handleBorrowRequest} className="space-y-4">
+                  {/* Payment Apps Recommendation */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">💳</span>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 mb-1">
+                          Liability Protection Recommendation
+                        </h3>
+                        <p className="text-sm text-gray-700 mb-2">
+                          We recommend using <strong>Venmo</strong>, <strong>Zelle</strong>, or <strong>CashApp</strong> for a security deposit if you're comfortable with that option. 
+                          This provides protection for the lender while keeping the process simple.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setShowCollateralModal(true)}
+                          className="text-sm text-umass-maroon hover:text-umass-maroonDark font-semibold underline mb-2"
+                        >
+                          🤖 Or view AI-recommended collateral items →
+                        </button>
+                        <div className="mt-3 p-2 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+                          <p className="text-sm text-yellow-800 font-semibold">
+                            ⚠️ Important: Be sure to come up with a valid collateral agreement with the lender before obtaining the item. 
+                            Discuss and agree on the collateral method (payment app deposit or physical item) before picking up the item.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block mb-2 font-medium">Start Date *</label>
                     <input
@@ -610,7 +706,64 @@ const ItemDetail = () => {
               Please sign in to request to borrow this item.
             </div>
           )}
+
+          {/* Report Button (when item is unavailable or user is not signed in) */}
+          {!isOwner && session && !isAvailable && (
+            <div className="mb-6 flex justify-center">
+              <button
+                onClick={() => setShowReportModal(true)}
+                className="text-sm bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 font-medium transition-colors shadow-sm"
+              >
+                🚨 Report Item
+              </button>
+            </div>
+          )}
         </div>
+
+        {/* Collateral Recommendations Modal */}
+        <CollateralModal
+          isOpen={showCollateralModal}
+          onClose={() => setShowCollateralModal(false)}
+          recommendations={collateralRecommendations}
+          loading={loadingCollateral}
+          item={item}
+        />
+
+        {/* User Info Modal */}
+        {item?.owner_id && (
+          <UserInfoModal
+            isOpen={showUserInfoModal}
+            onClose={() => setShowUserInfoModal(false)}
+            userId={item.owner_id}
+          />
+        )}
+
+        {/* Report Modal */}
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          itemId={item?.id}
+          itemTitle={item?.title}
+          onReport={async (itemId, reason) => {
+            try {
+              const response = await reportsAPI.report(itemId, reason);
+              if (response.success) {
+                showSuccess('Report submitted successfully! Thank you for helping keep our community safe.');
+                if (response.data?.auto_removed) {
+                  showWarning('This item has been automatically removed due to multiple reports.');
+                  // Reload item to reflect removal
+                  await loadItem();
+                }
+              } else {
+                showError(response.error || 'Failed to submit report');
+              }
+              return response;
+            } catch (err) {
+              showError(err.message || 'Failed to submit report');
+              return { success: false, error: err.message };
+            }
+          }}
+        />
 
         {/* Right Column - Messages */}
         <div>
