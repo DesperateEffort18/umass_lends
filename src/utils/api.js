@@ -149,10 +149,23 @@ export const messagesAPI = {
   },
 };
 
+// Recommendations API
+export const recommendationsAPI = {
+  // Get recommended items based on current time period
+  get: (limit = 6, period = null) => {
+    const params = new URLSearchParams();
+    if (limit) params.append('limit', limit.toString());
+    if (period) params.append('period', period);
+    const query = params.toString();
+    return publicApiRequest(`/api/recommendations${query ? `?${query}` : ''}`);
+  },
+};
+
 // Export default API helper
 export default {
   items: itemsAPI,
   borrow: borrowAPI,
   messages: messagesAPI,
+  recommendations: recommendationsAPI,
 };
 

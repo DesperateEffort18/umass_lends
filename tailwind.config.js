@@ -15,6 +15,8 @@ export default {
           white: '#FFFFFF',
           gray: '#4a4a4a',        // Dark gray for text
           lightGray: '#f5f5f5',   // Light gray for backgrounds
+          cream: '#fef5e7',       // Light cream for text on maroon backgrounds
+          lightCream: '#fff8f0',  // Very light cream for text
         },
       },
     },

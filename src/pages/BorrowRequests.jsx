@@ -96,7 +96,7 @@ const BorrowRequests = () => {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
       case 'returned':
-        return 'bg-umass-maroon text-white';
+        return 'bg-umass-maroon text-umass-cream';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -231,13 +231,13 @@ const BorrowRequests = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleApprove(request.id)}
-                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-semibold transition-colors"
+                        className="bg-green-600 text-umass-cream px-4 py-2 rounded hover:bg-green-700 font-semibold transition-colors"
                       >
                         Approve
                       </button>
                       <button
                         onClick={() => handleReject(request.id)}
-                        className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 font-semibold transition-colors"
+                        className="bg-red-600 text-umass-cream px-4 py-2 rounded hover:bg-red-700 font-semibold transition-colors"
                       >
                         Reject
                       </button>

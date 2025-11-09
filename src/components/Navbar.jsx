@@ -21,44 +21,44 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-umass-maroon text-white p-4 shadow-md">
+    <nav className="bg-umass-maroon text-umass-cream p-4 shadow-md">
       <div className="container mx-auto flex justify-between items-center">
-        <Link to="/" className="text-xl font-bold hover:text-umass-maroonLight transition-colors">
+        <Link to="/" className="text-xl font-bold hover:text-umass-lightCream transition-colors">
           🏛️ UMass Lends
         </Link>
         
         <div className="flex gap-4 items-center">
-          <Link to="/" className="hover:text-umass-maroonLight transition-colors font-medium">
+          <Link to="/" className="hover:text-umass-lightCream transition-colors font-medium">
             Browse
           </Link>
           
           {session ? (
             <>
-              <Link to="/my-items" className="hover:text-umass-maroonLight transition-colors font-medium">
+              <Link to="/my-items" className="hover:text-umass-lightCream transition-colors font-medium">
                 My Items
               </Link>
-              <Link to="/borrow-requests" className="hover:text-umass-maroonLight transition-colors font-medium">
+              <Link to="/borrow-requests" className="hover:text-umass-lightCream transition-colors font-medium">
                 Requests
               </Link>
-              <Link to="/items/new" className="hover:text-umass-maroonLight transition-colors font-medium">
+              <Link to="/items/new" className="hover:text-umass-lightCream transition-colors font-medium">
                 List Item
               </Link>
-              <Link to="/dashboard" className="hover:text-umass-maroonLight transition-colors font-medium">
+              <Link to="/dashboard" className="hover:text-umass-lightCream transition-colors font-medium">
                 Dashboard
               </Link>
               <button
                 onClick={handleSignOut}
-                className="hover:text-umass-maroonLight transition-colors font-medium"
+                className="hover:text-umass-lightCream transition-colors font-medium"
               >
                 Sign Out
               </button>
             </>
           ) : (
             <>
-              <Link to="/signin" className="hover:text-umass-maroonLight transition-colors font-medium">
+              <Link to="/signin" className="hover:text-umass-lightCream transition-colors font-medium">
                 Sign In
               </Link>
-              <Link to="/signup" className="bg-white text-umass-maroon px-4 py-2 rounded-lg hover:bg-umass-lightGray transition-colors font-medium">
+              <Link to="/signup" className="bg-umass-lightCream text-umass-maroon px-4 py-2 rounded-lg hover:bg-umass-cream transition-colors font-medium">
                 Sign Up
               </Link>
             </>

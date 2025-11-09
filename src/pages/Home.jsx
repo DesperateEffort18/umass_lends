@@ -4,12 +4,17 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { itemsAPI } from '../utils/api';
+import { itemsAPI, recommendationsAPI } from '../utils/api';
 import ItemCard from '../components/ItemCard';
 
 const Home = () => {
   const [items, setItems] = useState([]);
+  const [recommendedItems, setRecommendedItems] = useState([]);
+  const [recommendationExplanation, setRecommendationExplanation] = useState('');
+  const [currentPeriod, setCurrentPeriod] = useState('');
+  const [aiPowered, setAiPowered] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAvailable, setFilterAvailable] = useState(null);
@@ -18,6 +23,10 @@ const Home = () => {
   useEffect(() => {
     loadItems();
   }, [filterAvailable]);
+
+  useEffect(() => {
+    loadRecommendations();
+  }, []);
 
   const loadItems = async () => {
     try {
@@ -33,6 +42,25 @@ const Home = () => {
       console.error('Error loading items:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadRecommendations = async () => {
+    try {
+      setRecommendationsLoading(true);
+      // Request 3 recommendations (2-3 as requested)
+      const response = await recommendationsAPI.get(3);
+      if (response.success && response.data) {
+        setRecommendedItems(response.data.items || []);
+        setRecommendationExplanation(response.data.explanation || '');
+        setCurrentPeriod(response.data.period || '');
+        setAiPowered(response.data.aiPowered || false);
+      }
+    } catch (err) {
+      console.error('Error loading recommendations:', err);
+      // Don't show error to user, recommendations are optional
+    } finally {
+      setRecommendationsLoading(false);
     }
   };
 
@@ -69,6 +97,37 @@ const Home = () => {
         <div className="bg-yellow-50 border-2 border-yellow-300 text-yellow-800 px-4 py-3 rounded mb-4">
           <p className="font-semibold">⚠️ {error}</p>
           <p className="text-sm mt-2">Make sure your backend is running on http://localhost:3000</p>
+        </div>
+      )}
+
+      {/* Recommendations Section */}
+      {!recommendationsLoading && recommendedItems.length > 0 && (
+        <div className="mb-8">
+          <div className="bg-gradient-to-r from-umass-maroon to-umass-maroonDark text-umass-cream p-6 rounded-lg mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-2xl font-bold">✨ Recommended for You</h2>
+              {aiPowered && (
+                <span className="px-3 py-1 bg-umass-lightCream/20 text-umass-cream text-sm rounded-full font-medium flex items-center gap-1">
+                  <span>🤖</span>
+                  <span>AI-Powered</span>
+                </span>
+              )}
+            </div>
+            <p className="text-umass-lightCream">
+              {recommendationExplanation}
+              {currentPeriod && (
+                <span className="ml-2 text-sm opacity-75">
+                  (Current period: {currentPeriod.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())})
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+            {recommendedItems.map((item) => (
+              <ItemCard key={item.id} item={item} />
+            ))}
+          </div>
+          <hr className="my-8 border-gray-300" />
         </div>
       )}
 

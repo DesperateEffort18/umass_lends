@@ -199,7 +199,7 @@ const ItemDetail = () => {
               {!showBorrowForm ? (
                 <button
                   onClick={() => setShowBorrowForm(true)}
-                  className="w-full bg-umass-maroon text-white px-6 py-3 rounded-lg hover:bg-umass-maroonDark font-semibold transition-colors shadow-md"
+                  className="w-full bg-umass-maroon text-umass-cream px-6 py-3 rounded-lg hover:bg-umass-maroonDark font-semibold transition-colors shadow-md"
                 >
                   Request to Borrow
                 </button>
@@ -233,7 +233,7 @@ const ItemDetail = () => {
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="flex-1 bg-umass-maroon text-white px-6 py-3 rounded-lg hover:bg-umass-maroonDark disabled:opacity-50 font-semibold transition-colors shadow-md"
+                      className="flex-1 bg-umass-maroon text-umass-cream px-6 py-3 rounded-lg hover:bg-umass-maroonDark disabled:opacity-50 font-semibold transition-colors shadow-md"
                     >
                       {submitting ? 'Submitting...' : 'Submit Request'}
                     </button>
@@ -274,7 +274,7 @@ const ItemDetail = () => {
                     key={message.id}
                     className={`p-3 rounded ${
                       message.sender_id === session?.user?.id
-                        ? 'bg-umass-maroon text-white ml-8'
+                        ? 'bg-umass-maroon text-umass-cream ml-8'
                         : 'bg-umass-lightGray text-umass-gray mr-8'
                     }`}
                   >
@@ -305,7 +305,7 @@ const ItemDetail = () => {
               />
               <button
                 type="submit"
-                className="bg-umass-maroon text-white px-6 py-2 rounded-lg hover:bg-umass-maroonDark font-semibold transition-colors"
+                className="bg-umass-maroon text-umass-cream px-6 py-2 rounded-lg hover:bg-umass-maroonDark font-semibold transition-colors"
               >
                 Send
               </button>

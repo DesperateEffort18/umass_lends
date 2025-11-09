@@ -60,7 +60,7 @@ const handleSignIn = async (e) =>{
                             type="submit" 
                             disabled={loading} 
                             style={{ backgroundColor: '#881c1c' }}
-                            className="mt-6 w-full text-white py-3 px-4 rounded-lg hover:bg-[#6b1515] font-semibold transition-colors disabled:opacity-50 shadow-md cursor-pointer"
+                            className="mt-6 w-full text-umass-cream py-3 px-4 rounded-lg hover:bg-[#6b1515] font-semibold transition-colors disabled:opacity-50 shadow-md cursor-pointer"
                         >
                             {loading ? 'Signing in...' : 'Sign In'}
                         </button>

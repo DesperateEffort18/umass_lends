@@ -268,7 +268,7 @@ const CreateItem = () => {
           <button
             type="submit"
             disabled={loading || uploading}
-            className="flex-1 bg-umass-maroon text-white px-6 py-3 rounded-lg hover:bg-umass-maroonDark disabled:opacity-50 font-semibold transition-colors shadow-md"
+            className="flex-1 bg-umass-maroon text-umass-cream px-6 py-3 rounded-lg hover:bg-umass-maroonDark disabled:opacity-50 font-semibold transition-colors shadow-md"
           >
             {uploading ? 'Uploading image...' : loading ? 'Creating...' : 'Create Item'}
           </button>

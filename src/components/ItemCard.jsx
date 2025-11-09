@@ -30,7 +30,7 @@ const ItemCard = ({ item }) => {
         <div className="flex justify-between items-center mt-4">
           <div className="flex gap-2">
             {item.category && (
-              <span className="px-2 py-1 bg-umass-maroon text-white text-sm rounded font-medium">
+              <span className="px-2 py-1 bg-umass-maroon text-umass-cream text-sm rounded font-medium">
                 {item.category}
               </span>
             )}

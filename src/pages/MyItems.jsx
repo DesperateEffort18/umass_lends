@@ -104,7 +104,7 @@ const MyItems = () => {
         <h1 className="text-3xl font-bold">My Items</h1>
         <button
           onClick={() => navigate('/items/new')}
-          className="bg-umass-maroon text-white px-6 py-3 rounded-lg hover:bg-umass-maroonDark font-semibold transition-colors shadow-md"
+          className="bg-umass-maroon text-umass-cream px-6 py-3 rounded-lg hover:bg-umass-maroonDark font-semibold transition-colors shadow-md"
         >
           + Create New Item
         </button>
@@ -121,7 +121,7 @@ const MyItems = () => {
           <p className="text-gray-600 mb-4">You haven't created any items yet.</p>
           <button
             onClick={() => navigate('/items/new')}
-            className="bg-umass-maroon text-white px-6 py-3 rounded-lg hover:bg-umass-maroonDark font-semibold transition-colors shadow-md"
+            className="bg-umass-maroon text-umass-cream px-6 py-3 rounded-lg hover:bg-umass-maroonDark font-semibold transition-colors shadow-md"
           >
             Create Your First Item
           </button>
@@ -155,13 +155,13 @@ const MyItems = () => {
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleApprove(request.id)}
-                              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-semibold transition-colors"
+                              className="bg-green-600 text-umass-cream px-4 py-2 rounded hover:bg-green-700 font-semibold transition-colors"
                             >
                               Approve
                             </button>
                             <button
                               onClick={() => handleReject(request.id)}
-                              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 font-semibold transition-colors"
+                              className="bg-red-600 text-umass-cream px-4 py-2 rounded hover:bg-red-700 font-semibold transition-colors"
                             >
                               Reject
                             </button>
