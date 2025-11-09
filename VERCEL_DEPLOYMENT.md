@@ -1,5 +1,15 @@
 # Vercel Deployment Guide
 
+## Important: Build Configuration
+
+This project uses a **custom build script** that temporarily hides the `src/` directory (Vite frontend) during Next.js build to prevent React Router conflicts. The build script automatically:
+
+1. Temporarily renames `src/` directory
+2. Runs Next.js build (API routes only)
+3. Restores `src/` directory after build
+
+The build script is configured in `package.json` as the `build` command, so Vercel will use it automatically.
+
 ## Environment Variables Setup
 
 To fix the build error on Vercel, you need to set the following environment variables in your Vercel project settings:
@@ -55,6 +65,22 @@ The `next.config.js` has been configured to:
 - Provide fallback values during build to prevent errors
 
 ## Troubleshooting
+
+### Build Error: "useNavigate() may be used only in the context of a <Router> component"
+
+**This is the main issue you're experiencing!**
+
+**Cause**: Next.js is trying to pre-render React Router pages from `src/pages/` during build, but these pages use `useNavigate()` which requires a Router context that doesn't exist during static generation.
+
+**Solution**: The custom build script (`scripts/build-backend.js`) automatically fixes this by:
+1. Temporarily renaming the `src/` directory during build (so Next.js can't see it)
+2. Running Next.js build (which only processes API routes in `app/api/`)
+3. Restoring the `src/` directory after build
+
+**To verify the fix is working**:
+- Check that `package.json` has `"build": "node scripts/build-backend.js"`
+- The build script should automatically run when Vercel builds your project
+- You should see log messages like "Temporarily renaming src/ directory..." during build
 
 ### Build Error: "Cannot read properties of undefined (reading 'VITE_SUPABASE_URL')"
 

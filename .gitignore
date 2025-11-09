@@ -57,3 +57,8 @@ logs
 
 # test/development files
 src/components/ApiTest.jsx
+
+# Build script temporary files
+src.backup.tmp/
+vite.config.js.backup.tmp
+index.html.backup.tmp
