@@ -146,7 +146,7 @@ const MyItems = () => {
                         >
                           <div>
                             <p className="font-semibold">
-                              Request from: {request.borrower_id}
+                              Request from: {request.borrower_name || request.borrower_email || request.borrower_id}
                             </p>
                             <p className="text-sm text-gray-600">
                               {request.borrow_start_date} to {request.borrow_end_date}

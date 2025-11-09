@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       query = query.eq('status', status);
     }
     
-    const { data, error } = await query;
+    const { data: requests, error } = await query;
     
     if (error) {
       console.error('Error fetching borrow requests:', error);
@@ -50,8 +50,54 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const response = NextResponse.json<ApiResponse<BorrowRequest[]>>(
-      { success: true, data: data as BorrowRequest[] },
+    if (!requests || requests.length === 0) {
+      const response = NextResponse.json<ApiResponse<BorrowRequest[]>>(
+        { success: true, data: [] },
+        { status: 200 }
+      );
+      return addCorsHeaders(response);
+    }
+    
+    // Get all unique user IDs (borrowers and owners)
+    const userIds = new Set<string>();
+    requests.forEach((req: any) => {
+      userIds.add(req.borrower_id);
+      userIds.add(req.owner_id);
+    });
+    
+    // Fetch user information for all user IDs
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('id, email, name')
+      .in('id', Array.from(userIds));
+    
+    if (usersError) {
+      console.error('Error fetching users:', usersError);
+      // Continue even if user fetch fails, just use IDs
+    }
+    
+    // Create a map of user ID to user info
+    const usersMap = new Map<string, { name?: string; email?: string }>();
+    users?.forEach((u: any) => {
+      usersMap.set(u.id, { name: u.name, email: u.email });
+    });
+    
+    // Transform the data to include user information
+    const transformedData = requests.map((request: any) => {
+      const borrower = usersMap.get(request.borrower_id);
+      const owner = usersMap.get(request.owner_id);
+      
+      return {
+        ...request,
+        borrower_name: borrower?.name || borrower?.email || 'Unknown User',
+        borrower_email: borrower?.email || '',
+        owner_name: owner?.name || owner?.email || 'Unknown User',
+        owner_email: owner?.email || '',
+      };
+    });
+    
+    const response = NextResponse.json<ApiResponse<any[]>>(
+      { success: true, data: transformedData },
       { status: 200 }
     );
     return addCorsHeaders(response);

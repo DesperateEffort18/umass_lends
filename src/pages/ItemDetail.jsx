@@ -278,8 +278,13 @@ const ItemDetail = () => {
                         : 'bg-umass-lightGray text-umass-gray mr-8'
                     }`}
                   >
+                    <p className="text-xs font-semibold mb-1 opacity-80">
+                      {message.sender_id === session?.user?.id 
+                        ? 'You' 
+                        : (message.sender_name || message.sender_email || 'Unknown User')}
+                    </p>
                     <p>{message.text}</p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs opacity-70 mt-1">
                       {new Date(message.created_at).toLocaleString()}
                     </p>
                   </div>

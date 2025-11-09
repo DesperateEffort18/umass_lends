@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabaseClient();
     
     // Fetch messages for the item
-    const { data, error } = await supabase
+    const { data: messages, error } = await supabase
       .from('messages')
       .select('*')
       .eq('item_id', validatedQuery.itemId)
@@ -138,8 +138,50 @@ export async function GET(request: NextRequest) {
       return addCorsHeaders(response);
     }
     
-    const response = NextResponse.json<ApiResponse<Message[]>>(
-      { success: true, data: data as Message[] },
+    if (!messages || messages.length === 0) {
+      const response = NextResponse.json<ApiResponse<Message[]>>(
+        { success: true, data: [] },
+        { status: 200 }
+      );
+      return addCorsHeaders(response);
+    }
+    
+    // Get all unique sender IDs
+    const senderIds = new Set<string>();
+    messages.forEach((msg: any) => {
+      senderIds.add(msg.sender_id);
+    });
+    
+    // Fetch user information for all sender IDs
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('id, email, name')
+      .in('id', Array.from(senderIds));
+    
+    if (usersError) {
+      console.error('Error fetching users:', usersError);
+      // Continue even if user fetch fails
+    }
+    
+    // Create a map of user ID to user info
+    const usersMap = new Map<string, { name?: string; email?: string }>();
+    users?.forEach((u: any) => {
+      usersMap.set(u.id, { name: u.name, email: u.email });
+    });
+    
+    // Transform the data to include sender information
+    const transformedData = messages.map((message: any) => {
+      const sender = usersMap.get(message.sender_id);
+      
+      return {
+        ...message,
+        sender_name: sender?.name || sender?.email || 'Unknown User',
+        sender_email: sender?.email || '',
+      };
+    });
+    
+    const response = NextResponse.json<ApiResponse<any[]>>(
+      { success: true, data: transformedData },
       { status: 200 }
     );
     return addCorsHeaders(response);

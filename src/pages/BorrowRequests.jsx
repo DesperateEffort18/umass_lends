@@ -168,8 +168,11 @@ const BorrowRequests = () => {
                     >
                       {item?.title || 'Loading...'}
                     </Link>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Owner: {request.owner_name || request.owner_email || 'Unknown User'}
+                    </p>
                     <p className="text-sm text-gray-600">
-                      {request.borrow_start_date} to {request.borrow_end_date}
+                      Dates: {request.borrow_start_date} to {request.borrow_end_date}
                     </p>
                     <span
                       className={`inline-block px-2 py-1 rounded text-sm mt-2 ${getStatusColor(
@@ -210,8 +213,11 @@ const BorrowRequests = () => {
                     >
                       {item?.title || 'Loading...'}
                     </Link>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Requested by: {request.borrower_name || request.borrower_email || 'Unknown User'}
+                    </p>
                     <p className="text-sm text-gray-600">
-                      Requested: {request.borrow_start_date} to {request.borrow_end_date}
+                      Dates: {request.borrow_start_date} to {request.borrow_end_date}
                     </p>
                     <span
                       className={`inline-block px-2 py-1 rounded text-sm mt-2 ${getStatusColor(
