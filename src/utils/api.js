@@ -252,6 +252,34 @@ export const reportsAPI = {
   },
 };
 
+// Item Requests API
+export const itemRequestsAPI = {
+  // Get item requests
+  get: (options = {}) => {
+    const params = new URLSearchParams();
+    if (options.status) params.append('status', options.status);
+    if (options.mine) params.append('mine', 'true');
+    const query = params.toString();
+    return apiRequest(`/api/item-requests${query ? `?${query}` : ''}`);
+  },
+
+  // Create item request
+  create: (requestData) => {
+    return apiRequest('/api/item-requests', {
+      method: 'POST',
+      body: JSON.stringify(requestData),
+    });
+  },
+
+  // Accept item request
+  accept: (requestId, itemData) => {
+    return apiRequest(`/api/item-requests/${requestId}/accept`, {
+      method: 'POST',
+      body: JSON.stringify(itemData),
+    });
+  },
+};
+
 // Export default API helper
 export default {
   items: itemsAPI,
@@ -262,5 +290,6 @@ export default {
   collateral: collateralAPI,
   users: usersAPI,
   reports: reportsAPI,
+  itemRequests: itemRequestsAPI,
 };
 
