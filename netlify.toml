@@ -13,8 +13,8 @@
   NODE_VERSION = "18"
 
 # No plugins - we're building a Vite app, not Next.js
-# The Next.js plugin must be disabled in Netlify UI settings
-[plugins]
+# The Next.js runtime/plugin must be removed in Netlify UI settings
+# We don't need to declare plugins here if we're not using any
 
 # Redirect all routes to index.html for React Router (SPA routing)
 [[redirects]]
