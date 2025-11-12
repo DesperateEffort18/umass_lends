@@ -9,8 +9,8 @@
   
 # Build environment
 [build.environment]
-  # Use Node 18 for better compatibility
-  NODE_VERSION = "18"
+  # Use Node 20 for Vite 7.2.2 compatibility (requires 20.19+ or 22.12+)
+  NODE_VERSION = "20"
 
 # No plugins - we're building a Vite app, not Next.js
 # The Next.js runtime/plugin must be removed in Netlify UI settings
