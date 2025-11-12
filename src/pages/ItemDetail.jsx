@@ -190,14 +190,21 @@ const ItemDetail = () => {
   const loadItem = async () => {
     try {
       setLoading(true);
+      setError(null); // Clear any previous errors
       const response = await itemsAPI.getById(id);
       if (response.success) {
         setItem(response.data);
       } else {
-        setError(response.error || 'Item not found');
+        const errorMsg = response.error || 'Item not found';
+        console.error('Failed to load item:', errorMsg);
+        setError(errorMsg);
       }
     } catch (err) {
-      setError(err.message || 'Failed to load item');
+      const errorMsg = err.message || 'Failed to load item';
+      console.error('Error loading item:', err);
+      setError(errorMsg);
+      // Show error notification as well
+      showError(errorMsg);
     } finally {
       setLoading(false);
     }

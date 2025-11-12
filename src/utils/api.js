@@ -5,6 +5,7 @@ import { supabase } from '../supabaseClient';
 
 // Support both Vite (import.meta.env) and Next.js (process.env) environments
 const getApiBase = () => {
+  // Check for explicit API URL in environment variables (production)
   try {
     if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) {
       return import.meta.env.VITE_API_URL;
@@ -15,16 +16,50 @@ const getApiBase = () => {
   
   try {
     if (typeof process !== 'undefined' && process.env) {
-      return process.env.NEXT_PUBLIC_API_URL || process.env.VITE_API_URL;
+      if (process.env.NEXT_PUBLIC_API_URL) {
+        return process.env.NEXT_PUBLIC_API_URL;
+      }
+      if (process.env.VITE_API_URL) {
+        return process.env.VITE_API_URL;
+      }
     }
   } catch (e) {
     // process not available
   }
   
+  // Default to localhost for development
+  // In production, VITE_API_URL must be set via environment variables
   return 'http://localhost:3000';
 };
 
 const API_BASE = getApiBase();
+
+// Validate API_BASE in production and show helpful error
+if (typeof window !== 'undefined') {
+  const hostname = window.location.hostname;
+  const isProduction = hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.startsWith('192.168.');
+  
+  if (isProduction && API_BASE === 'http://localhost:3000') {
+    console.error(
+      '%c❌ [API] Configuration Error!',
+      'color: red; font-weight: bold; font-size: 14px;'
+    );
+    console.error(
+      'The frontend is running in production (' + hostname + ') but VITE_API_URL is not configured.\n' +
+      'API calls will fail because they are trying to connect to localhost.\n\n' +
+      'To fix this:\n' +
+      '1. Go to your deployment platform (Netlify/Vercel)\n' +
+      '2. Add environment variable: VITE_API_URL=https://your-backend.vercel.app\n' +
+      '3. Replace "your-backend.vercel.app" with your actual backend URL\n' +
+      '4. Redeploy your frontend\n\n' +
+      'Current API_BASE: ' + API_BASE
+    );
+  } else {
+    console.log('[API] API_BASE URL:', API_BASE);
+  }
+} else {
+  console.log('[API] API_BASE URL:', API_BASE);
+}
 
 /**
  * Get the current session token
@@ -79,20 +114,46 @@ async function apiRequest(endpoint, options = {}) {
  * Make a public API request (no auth required)
  */
 async function publicApiRequest(endpoint, options = {}) {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
+  const url = `${API_BASE}${endpoint}`;
+  console.log(`[API] Making request to: ${url}`);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error || `HTTP ${response.status}`);
+    console.log(`[API] Response status: ${response.status} for ${url}`);
+
+    // Handle network errors
+    if (!response) {
+      throw new Error(`Failed to connect to server. Make sure the backend is running at ${API_BASE}`);
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ 
+        error: `Server error: ${response.status} ${response.statusText}` 
+      }));
+      console.error(`[API] Error response:`, error);
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log(`[API] Success response for ${url}`);
+    return data;
+  } catch (error) {
+    console.error(`[API] Request failed for ${url}:`, error);
+    // Handle network errors (CORS, connection refused, etc.)
+    if (error.message === 'Failed to fetch' || error.name === 'TypeError' || error.message.includes('fetch') || error.message.includes('NetworkError')) {
+      const errorMsg = `Cannot connect to server at ${API_BASE}${endpoint}. Make sure the backend is running on port 3000. Error: ${error.message}`;
+      console.error(`[API] Network error:`, errorMsg);
+      throw new Error(errorMsg);
+    }
+    throw error;
   }
-
-  return response.json();
 }
 
 // Items API
