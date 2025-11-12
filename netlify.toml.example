@@ -1,16 +1,11 @@
 # Netlify configuration for Vite frontend deployment
-# This is a Vite + React app, NOT a Next.js app
-# The backend (Next.js) is deployed separately on Vercel
-# We use a custom build script to hide Next.js files and prevent auto-detection
+# IMPORTANT: This repository contains BOTH a Next.js backend and a Vite frontend
+# Only deploy the Vite frontend to Netlify
+# The Next.js backend should be deployed separately to Vercel
 
 [build]
-  command = "node scripts/netlify-build.js"
+  command = "npm run build:frontend"
   publish = "dist"
-
-# Explicitly disable Next.js plugin
-# The build script hides Next.js files so Netlify won't detect them
-[plugins]
-  # No plugins - we're building a Vite app, not Next.js
 
 # Redirect all routes to index.html for React Router (SPA routing)
 [[redirects]]

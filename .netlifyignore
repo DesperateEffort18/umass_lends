@@ -1,0 +1,24 @@
+# Netlify ignore file
+# Tell Netlify to ignore Next.js files since we're only deploying the Vite frontend
+
+# Next.js backend files (deployed separately to Vercel)
+.next/
+app/
+lib/
+scripts/build-backend.js
+next.config.js
+next-env.d.ts
+tsconfig.json
+vercel.json
+
+# Backend-only files
+database/
+docs/
+
+# Other files
+node_modules/
+*.log
+.env
+.env.local
+.env.*.local
+

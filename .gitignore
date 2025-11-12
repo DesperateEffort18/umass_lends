@@ -62,3 +62,5 @@ src/components/ApiTest.jsx
 src.backup.tmp/
 vite.config.js.backup.tmp
 index.html.backup.tmp
+*.netlify-hide
+*.netlify-hide/
