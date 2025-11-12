@@ -1,5 +1,3 @@
-import { NextResponse } from 'next/server';
-
 /**
  * Root page for the UMass Lends API
  * This is a backend-only Next.js deployment
