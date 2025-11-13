@@ -111,6 +111,4 @@ Frontend runs on `http://localhost:5173`
 - Input validation with Zod
 - Secure image storage
 
----
 
-**Made with ❤️ for UMass students**

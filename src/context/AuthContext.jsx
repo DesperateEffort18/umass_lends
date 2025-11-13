@@ -9,15 +9,54 @@ export const AuthContextProvider = ({children}) => {
 
     //Sign up
     const signUpNewUser = async ( email, password) =>{
+        // Get the current URL origin for redirect after email confirmation
+        const redirectUrl = typeof window !== 'undefined' 
+            ? `${window.location.origin}/auth/callback`
+            : 'http://localhost:5173/auth/callback';
+        
         const { data, error } = await supabase.auth.signUp({
             email: email,
             password: password,
+            options: {
+                emailRedirectTo: redirectUrl,
+                // This ensures the email confirmation link redirects back to your app
+            }
         });
+        
         if(error){
-        console.error("there was a problem signing up:", error);
-        return { success: false, error};
-    }
-    return { success: true, data };
+            console.error("there was a problem signing up:", error);
+            return { success: false, error};
+        }
+        
+        // Check if email confirmation is required
+        // If user is not confirmed, they need to check their email
+        const needsConfirmation = data.user && !data.session;
+        
+        return { 
+            success: true, 
+            data,
+            needsConfirmation: needsConfirmation // Indicates user needs to confirm email
+        };
+    };
+    
+    // Resend confirmation email
+    const resendConfirmationEmail = async (email) => {
+        const { error } = await supabase.auth.resend({
+            type: 'signup',
+            email: email,
+            options: {
+                emailRedirectTo: typeof window !== 'undefined' 
+                    ? `${window.location.origin}/auth/callback`
+                    : 'http://localhost:5173/auth/callback',
+            }
+        });
+        
+        if(error){
+            console.error("there was a problem resending confirmation email:", error);
+            return { success: false, error};
+        }
+        
+        return { success: true };
     };
 
     //Sign in
@@ -84,7 +123,13 @@ export const AuthContextProvider = ({children}) => {
 
 
     return(
-        <AuthContext.Provider value={{session, signUpNewUser, signInUser, signOut}}>
+        <AuthContext.Provider value={{
+            session, 
+            signUpNewUser, 
+            signInUser, 
+            signOut,
+            resendConfirmationEmail
+        }}>
             {children}
         </AuthContext.Provider>
     );

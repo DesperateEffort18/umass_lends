@@ -15,6 +15,7 @@ import MyRequests from "./pages/MyRequests";
 import AvailableRequests from "./pages/AvailableRequests";
 import CustomRequests from "./pages/CustomRequests";
 import Layout from "./components/Layout";
+import AuthCallback from "./pages/AuthCallback";
 
 export const router = createBrowserRouter([
     {
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
             { path: "/", element: <Home />},
             { path: "/signup", element: <Signup />},
             { path: "/signin", element: <Signin />},
+            { path: "/auth/callback", element: <AuthCallback />},
             { path: "/items/:id", element: <ItemDetail />},
             { 
                 path: "/dashboard", 
