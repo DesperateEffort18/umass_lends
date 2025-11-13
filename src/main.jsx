@@ -4,6 +4,8 @@ import './index.css';
 import { RouterProvider } from 'react-router-dom';
 import { router } from "./router.jsx";
 import { AuthContextProvider } from './context/AuthContext.jsx';
+// Import debug utilities (makes them available in browser console)
+import './utils/debugAuth.js';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

@@ -70,14 +70,66 @@ if (typeof window !== 'undefined') {
 }
 
 /**
- * Get the current session token
+ * Get the current session token, refreshing if necessary
  */
 async function getToken() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) {
-    throw new Error('Not authenticated');
+  try {
+    // First, try to get the current session
+    let { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error('[API] Error getting session:', error);
+      throw new Error('Not authenticated: Failed to get session');
+    }
+    
+    // Check if session exists
+    if (!session) {
+      console.warn('[API] No session found, attempting to refresh...');
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError || !refreshData?.session) {
+        console.error('[API] Failed to refresh session:', refreshError);
+        throw new Error('Not authenticated: No active session');
+      }
+      
+      session = refreshData.session;
+    }
+    
+    // Check if token is expired (with 5 minute buffer)
+    const now = Date.now();
+    const expiresAt = session.expires_at ? session.expires_at * 1000 : null;
+    const bufferTime = 5 * 60 * 1000; // 5 minutes in milliseconds
+    
+    if (expiresAt && (now + bufferTime) >= expiresAt) {
+      console.log('[API] Token expired or expiring soon, refreshing...');
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError) {
+        console.error('[API] Error refreshing expired token:', refreshError);
+        // If refresh fails, still try with current token
+        if (!session.access_token) {
+          throw new Error('Not authenticated: Token expired and refresh failed');
+        }
+      } else if (refreshData?.session) {
+        session = refreshData.session;
+        console.log('[API] Token refreshed successfully');
+      }
+    }
+    
+    if (!session?.access_token) {
+      console.error('[API] No access token in session');
+      throw new Error('Not authenticated: No access token available');
+    }
+    
+    return session.access_token;
+  } catch (error) {
+    console.error('[API] Error getting token:', error);
+    // Re-throw with more context if it's not already our error
+    if (error.message && error.message.includes('Not authenticated')) {
+      throw error;
+    }
+    throw new Error(`Not authenticated: ${error.message || 'Unknown error'}`);
   }
-  return session.access_token;
 }
 
 /**
@@ -86,6 +138,14 @@ async function getToken() {
 async function apiRequest(endpoint, options = {}) {
   try {
     const token = await getToken();
+    
+    if (!token) {
+      throw new Error('Not authenticated: No token available');
+    }
+    
+    // Log token info (first 20 chars only for security)
+    console.log(`[API] Making authenticated request to ${endpoint}`);
+    console.log(`[API] Token preview: ${token.substring(0, 20)}... (length: ${token.length})`);
     
     const response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
@@ -102,13 +162,27 @@ async function apiRequest(endpoint, options = {}) {
     }
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ 
+      const errorData = await response.json().catch(() => ({ 
         error: `Server error: ${response.status} ${response.statusText}` 
       }));
-      throw new Error(error.error || `HTTP ${response.status}`);
+      
+      console.error(`[API] Request failed for ${endpoint}:`, {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData.error
+      });
+      
+      // If it's a 401, it means auth failed
+      if (response.status === 401) {
+        throw new Error(errorData.error || 'Unauthorized: Authentication failed');
+      }
+      
+      throw new Error(errorData.error || `HTTP ${response.status}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log(`[API] Request successful for ${endpoint}`);
+    return data;
   } catch (error) {
     // Handle network errors (CORS, connection refused, etc.)
     if (error.message === 'Failed to fetch' || error.name === 'TypeError') {

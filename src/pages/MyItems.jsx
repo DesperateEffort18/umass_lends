@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserAuth } from '../context/AuthContext';
 import { itemsAPI, borrowAPI } from '../utils/api';
+import { supabase } from '../supabaseClient';
 import ItemCard from '../components/ItemCard';
 import CountdownTimer from '../components/CountdownTimer';
 import { calculateExactReturnDeadline, formatDateOnlyEST } from '../utils/dateUtils';
@@ -35,6 +36,21 @@ const MyItems = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      // Try to refresh the session first if needed
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (currentSession?.expires_at && currentSession.expires_at * 1000 < Date.now()) {
+          console.log('[MyItems] Token expired, refreshing...');
+          const { error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError) {
+            console.error('[MyItems] Failed to refresh session:', refreshError);
+          }
+        }
+      } catch (refreshErr) {
+        console.error('[MyItems] Error refreshing session:', refreshErr);
+      }
       
       // Load all items
       const itemsResponse = await itemsAPI.getAll();
@@ -44,15 +60,40 @@ const MyItems = () => {
           (item) => item.owner_id === session.user?.id
         );
         setItems(myItems);
+      } else {
+        setError(itemsResponse.error || 'Failed to load items');
       }
 
       // Load borrow requests
-      const requestsResponse = await borrowAPI.getMine();
-      if (requestsResponse.success) {
-        setBorrowRequests(requestsResponse.data || []);
+      try {
+        const requestsResponse = await borrowAPI.getMine();
+        if (requestsResponse.success) {
+          setBorrowRequests(requestsResponse.data || []);
+        } else {
+          // Don't set error here, just log it - items might still load
+          console.warn('[MyItems] Failed to load borrow requests:', requestsResponse.error);
+        }
+      } catch (reqErr) {
+        // Don't fail the whole page if borrow requests fail
+        console.warn('[MyItems] Error loading borrow requests:', reqErr);
       }
     } catch (err) {
-      setError(err.message || 'Failed to load data');
+      const errorMessage = err.message || 'Failed to load data';
+      setError(errorMessage);
+      
+      // If it's an auth error, try to refresh once more
+      if (errorMessage.includes('Not authenticated') || errorMessage.includes('Unauthorized')) {
+        try {
+          const { error: refreshError } = await supabase.auth.refreshSession();
+          if (!refreshError) {
+            // Refresh succeeded, retry
+            loadData();
+            return;
+          }
+        } catch (refreshErr) {
+          console.error('[MyItems] Error refreshing session:', refreshErr);
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -204,7 +245,7 @@ const MyItems = () => {
             const requests = getRequestsForItem(item.id);
             const hasActiveBorrows = requests.some(req => req.status === 'approved');
             return (
-              <div key={item.id} className="border border-umass-maroon rounded-lg overflow-hidden bg-white flex flex-col hover:shadow-lg transition-shadow">
+              <div key={item.id} className="rounded-lg overflow-hidden bg-white flex flex-col hover:shadow-lg transition-shadow">
                 <div className="flex-1 px-4 pt-4 pb-2">
                   <ItemCard item={item} compact={true} noBorder={true} />
                 </div>

@@ -41,16 +41,44 @@ const Profile = () => {
   const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
-    if (!session) {
-      navigate('/signin');
-      return;
-    }
-    loadProfile();
+    const loadProfileIfAuthenticated = async () => {
+      // If session is undefined, it's still loading - wait
+      if (session === undefined) {
+        return;
+      }
+      
+      // If session is null, user is not authenticated
+      if (!session) {
+        navigate('/signin');
+        return;
+      }
+      
+      // Session exists, load profile
+      loadProfile();
+    };
+    
+    loadProfileIfAuthenticated();
   }, [session, navigate]);
 
   const loadProfile = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      // Try to refresh the session first
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (currentSession?.expires_at && currentSession.expires_at * 1000 < Date.now()) {
+          console.log('[Profile] Token expired, refreshing...');
+          const { error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError) {
+            console.error('[Profile] Failed to refresh session:', refreshError);
+          }
+        }
+      } catch (refreshErr) {
+        console.error('[Profile] Error refreshing session:', refreshErr);
+      }
+      
       const response = await profileAPI.get();
       if (response.success && response.data) {
         setProfile({
@@ -62,25 +90,37 @@ const Profile = () => {
         if (response.data.profile_picture_url) {
           setImagePreview(response.data.profile_picture_url);
         }
-      } else if (response.error && (response.error.includes('Unauthorized') || response.error.includes('Invalid or expired token'))) {
-        // Token expired - clear session and redirect to sign in
-        setError('Your session has expired. Please sign in again.');
-        await supabase.auth.signOut();
-        setTimeout(() => {
-          navigate('/signin');
-        }, 2000);
+        setError(null);
+      } else {
+        setError(response.error || 'Failed to load profile');
       }
     } catch (err) {
       const errorMessage = err.message || 'Failed to load profile';
       setError(errorMessage);
       
-      // Check if it's an authentication error
-      if (errorMessage.includes('Unauthorized') || errorMessage.includes('Invalid or expired token') || errorMessage.includes('Not authenticated')) {
-        // Clear expired session
-        await supabase.auth.signOut();
-        setTimeout(() => {
-          navigate('/signin');
-        }, 2000);
+      // Only sign out if it's definitely an authentication error and refresh didn't help
+      if (errorMessage.includes('Not authenticated') && !errorMessage.includes('refresh')) {
+        // Try one more time to refresh
+        try {
+          const { error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError) {
+            console.error('[Profile] Final refresh attempt failed, signing out...');
+            // Only sign out if refresh definitely failed
+            setTimeout(async () => {
+              await supabase.auth.signOut();
+              navigate('/signin');
+            }, 1500);
+          } else {
+            // Refresh succeeded, retry the request
+            loadProfile();
+          }
+        } catch (finalErr) {
+          console.error('[Profile] Error in final refresh attempt:', finalErr);
+          setTimeout(async () => {
+            await supabase.auth.signOut();
+            navigate('/signin');
+          }, 1500);
+        }
       }
     } finally {
       setLoading(false);

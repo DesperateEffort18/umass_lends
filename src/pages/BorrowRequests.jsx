@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserAuth } from '../context/AuthContext';
 import { borrowAPI, itemsAPI } from '../utils/api';
+import { supabase } from '../supabaseClient';
 import CountdownTimer from '../components/CountdownTimer';
 import { calculateExactReturnDeadline, formatDateOnlyEST, formatDateTimeEST } from '../utils/dateUtils';
 import Notification from '../components/Notification';
@@ -25,16 +26,44 @@ const BorrowRequests = () => {
   const [cancelModal, setCancelModal] = useState({ isOpen: false, requestId: null, itemTitle: '' });
 
   useEffect(() => {
-    if (!session) {
-      navigate('/signin');
-      return;
-    }
-    loadRequests();
+    const loadRequestsIfAuthenticated = async () => {
+      // If session is undefined, it's still loading - wait
+      if (session === undefined) {
+        return;
+      }
+      
+      // If session is null, user is not authenticated
+      if (!session) {
+        navigate('/signin');
+        return;
+      }
+      
+      // Session exists, load requests
+      loadRequests();
+    };
+    
+    loadRequestsIfAuthenticated();
   }, [session, navigate, filterStatus]);
 
   const loadRequests = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      // Try to refresh the session first if needed
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (currentSession?.expires_at && currentSession.expires_at * 1000 < Date.now()) {
+          console.log('[BorrowRequests] Token expired, refreshing...');
+          const { error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError) {
+            console.error('[BorrowRequests] Failed to refresh session:', refreshError);
+          }
+        }
+      } catch (refreshErr) {
+        console.error('[BorrowRequests] Error refreshing session:', refreshErr);
+      }
+      
       const response = await borrowAPI.getMine(filterStatus || null);
       
       if (response.success) {

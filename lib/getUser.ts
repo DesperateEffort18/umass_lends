@@ -53,20 +53,33 @@ export async function getUser(request?: NextRequest): Promise<User> {
     // Extract the token
     const token = authHeader.replace('Bearer ', '');
 
-    // Create a Supabase client with the token
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    });
+    // Validate token exists
+    if (!token || token.trim().length === 0) {
+      console.error('[getUser] Empty token received');
+      throw new Error('Unauthorized: Invalid token format');
+    }
+
+    // Create a Supabase client
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
     // Get the user from the token
+    // Pass the token directly to getUser() - this is the correct way
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
-    if (error || !user) {
-      throw new Error('Unauthorized: Invalid or expired token');
+    if (error) {
+      console.error('[getUser] Supabase auth error:', {
+        message: error.message,
+        status: error.status,
+        name: error.name,
+        tokenLength: token?.length,
+        tokenPreview: token?.substring(0, 20) + '...'
+      });
+      throw new Error(`Unauthorized: Invalid or expired token - ${error.message}`);
+    }
+    
+    if (!user) {
+      console.error('[getUser] No user returned from Supabase auth');
+      throw new Error('Unauthorized: Invalid or expired token - No user found');
     }
 
     // Ensure user exists in users table (for foreign key constraints)
@@ -81,12 +94,17 @@ export async function getUser(request?: NextRequest): Promise<User> {
   } catch (error: any) {
     // If error is already our custom error, rethrow it
     if (error.message?.includes('Unauthorized')) {
+      console.error('[getUser] Auth error:', error.message);
       throw error;
     }
     
     // Otherwise, wrap in a generic unauthorized error
-    console.error('Error getting user:', error);
-    throw new Error('Unauthorized: Authentication failed');
+    console.error('[getUser] Unexpected error getting user:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack
+    });
+    throw new Error(`Unauthorized: Authentication failed - ${error.message || 'Unknown error'}`);
   }
 }
 

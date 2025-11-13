@@ -63,70 +63,111 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-umass-maroon text-umass-cream p-4 shadow-md">
-      <div className="container mx-auto flex justify-between items-center">
-        <Link to="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
-          {logoError ? (
-            <span className="text-xl font-bold text-umass-cream">🏛️ UMass Lends</span>
-          ) : (
-            <>
-              <img 
-                src="/umasslendslogo.png" 
-                alt="UMass Lends Logo" 
-                className="h-14 w-auto"
-                onError={() => setLogoError(true)}
-              />
-              <span className="text-xl font-bold text-umass-cream hidden sm:inline-block">
-                UMass Lends
+    <nav className="relative bg-gradient-maroon text-umass-cream shadow-lg border-b-2 border-umass-maroonDark">
+      {/* Subtle texture overlay */}
+      <div className="absolute inset-0 opacity-10 pointer-events-none"
+           style={{
+             backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.05) 2px, rgba(255,255,255,0.05) 4px)'
+           }}></div>
+      
+      <div className="container mx-auto px-6 py-4 relative z-10">
+        <div className="flex justify-between items-center">
+          <Link to="/" className="flex items-center gap-4 hover:opacity-90 transition-all duration-300 group">
+            {logoError ? (
+              <span className="text-2xl font-display font-bold text-umass-cream tracking-tight">
+                🏛️ UMass Lends
               </span>
-            </>
-          )}
-        </Link>
-        
-        <div className="flex gap-6 items-center">
-          <Link to="/" className="hover:text-umass-lightCream transition-colors font-medium">
-            Browse
+            ) : (
+              <>
+                <img 
+                  src="/umasslendslogo.png" 
+                  alt="UMass Lends Logo" 
+                  className="h-16 w-auto transition-transform duration-300 group-hover:scale-105"
+                  onError={() => setLogoError(true)}
+                />
+                <span className="text-2xl font-display font-bold text-umass-cream hidden sm:inline-block tracking-tight">
+                  UMass Lends
+                </span>
+              </>
+            )}
           </Link>
           
-          {session ? (
-            <>
-              <Link to="/my-items" className="hover:text-umass-lightCream transition-colors font-medium">
-                My Items
-              </Link>
-              <Link to="/borrow-requests" className="hover:text-umass-lightCream transition-colors font-medium relative px-2 py-1">
-                Requests
-                {pendingCount > 0 && (
-                  <span className="absolute top-2 right-0 bg-red-600 text-white text-xs font-bold rounded-full h-3.5 w-3.5 flex items-center justify-center shadow-md transform translate-x-1/2 -translate-y-1/2" style={{ fontSize: '9px', lineHeight: '1', minWidth: '14px', padding: '0 2px' }}>
-                    {pendingCount > 9 ? '9+' : pendingCount}
-                  </span>
-                )}
-              </Link>
-              <Link to="/custom-requests" className="hover:text-umass-lightCream transition-colors font-medium">
-                Custom Requests
-              </Link>
-              <Link to="/dashboard" className="hover:text-umass-lightCream transition-colors font-medium">
-                Dashboard
-              </Link>
-              <Link to="/profile" className="hover:text-umass-lightCream transition-colors font-medium">
-                Profile
-              </Link>
-              <button
-                onClick={handleSignOut}
-                className="hover:text-umass-lightCream transition-colors font-medium"
-              >
-                Sign Out
-              </button>
-            </>
-          ) : (
-            <div className="flex gap-3 items-center">
-              <Link to="/signin" className="hover:text-umass-lightCream transition-colors font-medium">
-                Sign In
-              </Link>
-              <Link to="/signup" className="bg-umass-lightCream text-umass-maroon px-4 py-2 rounded-lg hover:bg-umass-cream transition-colors font-medium">
-                Sign Up
-              </Link>
-            </div>
-          )}
+          <div className="flex gap-8 items-center">
+            <Link 
+              to="/" 
+              className="font-accent font-semibold text-sm uppercase tracking-wider hover:text-umass-lightCream transition-colors duration-200 relative group"
+            >
+              Browse
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-umass-lightCream transition-all duration-300 group-hover:w-full"></span>
+            </Link>
+            
+            {session ? (
+              <>
+                <Link 
+                  to="/my-items" 
+                  className="font-accent font-semibold text-sm uppercase tracking-wider hover:text-umass-lightCream transition-colors duration-200 relative group"
+                >
+                  My Items
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-umass-lightCream transition-all duration-300 group-hover:w-full"></span>
+                </Link>
+                <Link 
+                  to="/borrow-requests" 
+                  className="font-accent font-semibold text-sm uppercase tracking-wider hover:text-umass-lightCream transition-colors duration-200 relative px-3 py-1 group"
+                >
+                  Requests
+                  {pendingCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-lg transform scale-100 group-hover:scale-110 transition-transform duration-200" style={{ fontSize: '10px', lineHeight: '1', minWidth: '20px', padding: '0 3px' }}>
+                      {pendingCount > 9 ? '9+' : pendingCount}
+                    </span>
+                  )}
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-umass-lightCream transition-all duration-300 group-hover:w-full"></span>
+                </Link>
+                <Link 
+                  to="/custom-requests" 
+                  className="font-accent font-semibold text-sm uppercase tracking-wider hover:text-umass-lightCream transition-colors duration-200 relative group"
+                >
+                  Custom Requests
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-umass-lightCream transition-all duration-300 group-hover:w-full"></span>
+                </Link>
+                <Link 
+                  to="/dashboard" 
+                  className="font-accent font-semibold text-sm uppercase tracking-wider hover:text-umass-lightCream transition-colors duration-200 relative group"
+                >
+                  Dashboard
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-umass-lightCream transition-all duration-300 group-hover:w-full"></span>
+                </Link>
+                <Link 
+                  to="/profile" 
+                  className="font-accent font-semibold text-sm uppercase tracking-wider hover:text-umass-lightCream transition-colors duration-200 relative group"
+                >
+                  Profile
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-umass-lightCream transition-all duration-300 group-hover:w-full"></span>
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  className="font-accent font-semibold text-sm uppercase tracking-wider hover:text-umass-lightCream transition-colors duration-200 px-4 py-2 border-2 border-umass-cream/30 hover:border-umass-cream rounded-md transition-all duration-300"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <div className="flex gap-4 items-center">
+                <Link 
+                  to="/signin" 
+                  className="font-accent font-semibold text-sm uppercase tracking-wider hover:text-umass-lightCream transition-colors duration-200 relative group"
+                >
+                  Sign In
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-umass-lightCream transition-all duration-300 group-hover:w-full"></span>
+                </Link>
+                <Link 
+                  to="/signup" 
+                  className="bg-umass-lightCream text-umass-maroon px-5 py-2.5 rounded-md hover:bg-white transition-all duration-300 font-accent font-bold text-sm uppercase tracking-wider shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </nav>
